@@ -146,3 +146,53 @@ export function getDayNotes(spaceId: number, date: string) {
     .all(spaceId, date);
 }
 
+export function leaveSpace(tgUserId: string) {
+  db.prepare(`DELETE FROM members WHERE tg_user_id = ?`).run(tgUserId);
+}
+
+// Жёсткий сброс всего space (для owner)
+export function resetSpaceByOwner(tgUserId: string) {
+  const m = getMembershipByUser(tgUserId);
+  if (!m) return { ok: true, already: "not_in_space" };
+
+  if (m.role !== "owner") return { ok: false, error: "not_owner" };
+
+  const spaceId = Number(m.spaceId);
+  db.prepare(`DELETE FROM members WHERE space_id = ?`).run(spaceId);
+  db.prepare(`DELETE FROM spaces WHERE id = ?`).run(spaceId);
+
+  // На всякий случай чистим заметки/серии/notes если есть таблицы
+  try { db.prepare(`DELETE FROM day_notes WHERE space_id = ?`).run(spaceId); } catch {}
+  try { db.prepare(`DELETE FROM notes WHERE space_id = ?`).run(spaceId); } catch {}
+  try { db.prepare(`DELETE FROM series WHERE space_id = ?`).run(spaceId); } catch {}
+
+  return { ok: true };
+}
+
+export function leaveSpace(tgUserId: string) {
+  db.prepare(`DELETE FROM members WHERE tg_user_id = ?`).run(tgUserId);
+}
+
+export function resetSpaceByOwner(ownerTgUserId: string): { ok: boolean; reason?: string } {
+  const m = db.prepare(`
+    SELECT space_id AS spaceId, role
+    FROM members
+    WHERE tg_user_id = ?
+  `).get(ownerTgUserId) as any;
+
+  if (!m) return { ok: false, reason: "not_in_space" };
+  if (m.role !== "owner") return { ok: false, reason: "not_owner" };
+
+  const spaceId = Number(m.spaceId);
+
+  db.prepare(`DELETE FROM members WHERE space_id = ?`).run(spaceId);
+  db.prepare(`UPDATE spaces SET pin_hash = NULL, pin_expires_at = NULL WHERE id = ?`).run(spaceId);
+
+  // Если хочешь, можно подчистить day_notes / notes / series:
+  try { db.prepare(`DELETE FROM day_notes WHERE space_id = ?`).run(spaceId); } catch {}
+  try { db.prepare(`DELETE FROM notes WHERE space_id = ?`).run(spaceId); } catch {}
+  try { db.prepare(`DELETE FROM series WHERE space_id = ?`).run(spaceId); } catch {}
+
+  return { ok: true };
+}
+

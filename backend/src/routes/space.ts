@@ -10,6 +10,8 @@ import {
   addMember,
   burnSpacePin,
   addDayNote,
+  leaveSpace,
+  resetSpaceByOwner,
 } from "../repo";
 
 export const spaceRouter = Router();
@@ -17,11 +19,8 @@ export const spaceRouter = Router();
 spaceRouter.post("/create", requireTelegramAuth, (req: Request, res: Response) => {
   const tgUserId = req.user!.tgUserId;
 
-  // если уже в space — не создаём заново
   const m = getMembershipByUser(tgUserId);
-  if (m) {
-    return res.status(400).json({ error: "already_paired" });
-  }
+  if (m) return res.status(400).json({ error: "already_paired" });
 
   const spaceId = createSpaceWithOwner(tgUserId);
 
@@ -44,8 +43,7 @@ spaceRouter.post("/join", requireTelegramAuth, (req: Request, res: Response) => 
   if (!/^\d{6}$/.test(pin)) return res.status(400).json({ error: "bad_pin_format" });
 
   const row = findSpaceByPinHash(hashPin(pin));
-  if (!row) return res.status(404).json({ error: "pin_not_found" });
-  if (!row.pinExpiresAt) return res.status(404).json({ error: "pin_not_found" });
+  if (!row?.pinExpiresAt) return res.status(404).json({ error: "pin_not_found" });
 
   if (new Date(row.pinExpiresAt).getTime() < Date.now()) {
     return res.status(410).json({ error: "pin_expired" });
@@ -60,24 +58,39 @@ spaceRouter.post("/join", requireTelegramAuth, (req: Request, res: Response) => 
   return res.json({ spaceId: row.spaceId, paired: true });
 });
 
-// ✅ заметка по ДАТЕ (без времени)
+// ✅ day-note (без времени)
 spaceRouter.post("/daynote", requireTelegramAuth, (req: Request, res: Response) => {
   const tgUserId = req.user!.tgUserId;
+  const m = getMembershipByUser(tgUserId);
+  if (!m) return res.status(403).json({ error: "not_in_space" });
 
-  const membership = getMembershipByUser(tgUserId);
-  if (!membership) return res.status(403).json({ error: "not_in_space" });
-
-  const spaceId = Number(membership.spaceId);
+  const spaceId = Number(m.spaceId);
   const { date, text } = req.body || {};
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
     return res.status(400).json({ error: "bad_date" });
   }
+
   const cleanText = String(text || "").trim();
   if (!cleanText) return res.status(400).json({ error: "empty_text" });
-  if (cleanText.length > 2000) return res.status(400).json({ error: "too_long" });
+  if (cleanText.length > 500) return res.status(400).json({ error: "too_long" });
 
   addDayNote(spaceId, String(date), tgUserId, cleanText);
+  return res.json({ ok: true });
+});
+
+// ✅ выйти из space (починит "already_paired" без удаления БД)
+spaceRouter.post("/leave", requireTelegramAuth, (req: Request, res: Response) => {
+  const tgUserId = req.user!.tgUserId;
+  leaveSpace(tgUserId);
+  return res.json({ ok: true });
+});
+
+// ✅ owner reset space
+spaceRouter.post("/reset", requireTelegramAuth, (req: Request, res: Response) => {
+  const tgUserId = req.user!.tgUserId;
+  const r = resetSpaceByOwner(tgUserId);
+  if (!r.ok) return res.status(403).json({ error: r.reason || "reset_failed" });
   return res.json({ ok: true });
 });
 

@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <title>Shared Schedule</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ✅ правильный viewport + запрет зума -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
@@ -25,49 +28,76 @@
       --c4:#38bdf8;
       --c5:#f97316;
       --c6:#facc15;
-    }
 
-    html, body{
-      height:100%;
-      overscroll-behavior: none; /* меньше “плывёт” */
+      --app-h: 100vh; /* будет заменено tg.viewportStableHeight */
     }
 
     *{ box-sizing:border-box; }
-    body{
+
+    html, body{
+      height:100%;
       margin:0;
-      padding:16px 16px 106px; /* место под большой таб-бар */
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      background: radial-gradient(1200px 800px at 40% -10%, rgba(255,45,134,.20), transparent 60%),
-                  radial-gradient(900px 600px at 110% 10%, rgba(168,85,247,.16), transparent 60%),
-                  var(--bg);
-      color:var(--text);
-      -webkit-overflow-scrolling: auto; /* меньше инерции */
-      touch-action: manipulation;       /* меньше случайных “движений” */
+      padding:0;
+      overflow:hidden;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    }
+
+    .app{
+      height: var(--app-h, 100vh);
+      display:flex;
+      flex-direction:column;
+      background:
+        radial-gradient(1200px 800px at 40% -10%, rgba(255,45,134,.20), transparent 60%),
+        radial-gradient(900px 600px at 110% 10%, rgba(168,85,247,.16), transparent 60%),
+        var(--bg);
     }
 
     .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px; margin-bottom:12px;
+      padding: 14px 14px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex: 0 0 auto;
     }
     .brand{
       font-weight:950; letter-spacing:.2px;
       display:flex; align-items:center; gap:10px;
+      min-width: 0;
     }
     .dot{
       width:9px; height:9px; border-radius:999px;
       background:var(--pink);
       box-shadow:0 0 0 4px rgba(255,45,134,.15);
+      flex: 0 0 auto;
     }
     .badge{
       font-size:12px; padding:4px 8px; border:1px solid var(--border);
       border-radius:999px; background:rgba(255,255,255,.03); color:var(--muted);
+      flex: 0 0 auto;
     }
     .pill{
       display:inline-flex; align-items:center; gap:8px;
       padding:6px 10px; border-radius:999px; border:1px solid var(--border);
       background:rgba(255,255,255,.03); color:var(--muted); font-size:12px;
+      max-width: 48vw;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .mono{ font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+    .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+
+    .content{
+      flex: 1 1 auto;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      touch-action: manipulation;
+    }
 
     .card{
       background: var(--card);
@@ -79,9 +109,13 @@
     }
     .card h2{ margin:0 0 10px 0; font-size:16px; letter-spacing:.2px; }
     .muted{ color:var(--muted); font-size:13px; line-height:1.35; }
+    .err{ color:var(--bad); font-weight:900; }
 
     .row{ display:flex; gap:10px; align-items:center; }
     .row > *{ flex:1; }
+
+    /* ✅ iOS zoom fix: font-size >= 16px */
+    input, select, textarea, button{ font-size:16px; }
 
     input, select, textarea{
       width:100%;
@@ -91,7 +125,6 @@
       background:rgba(255,255,255,.03);
       color:var(--text);
       outline:none;
-      font-size:15px;
     }
     textarea{ min-height:110px; resize:vertical; }
 
@@ -104,9 +137,8 @@
       color:var(--text);
       font-weight:850;
       cursor:pointer;
-      transition:.12s ease;
+      transition: .12s ease;
     }
-    /* убрал transform: translateY — меньше “плывёт” */
     button:active{ filter: brightness(1.05); }
     button:disabled{ opacity:.55; cursor:not-allowed; }
 
@@ -135,20 +167,17 @@
       padding:10px 0;
       color:var(--pink2);
       text-shadow:0 0 18px rgba(255,102,176,.25);
+      user-select: all;
     }
-    .err{ color:var(--bad); font-weight:900; }
 
-    /* Big bottom tabs */
     .tabs{
-      position:fixed;
-      left:0; right:0; bottom:0;
-      padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+      flex: 0 0 auto;
+      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
       background: rgba(11,11,16,.96);
       border-top:1px solid rgba(255,255,255,.10);
       backdrop-filter: blur(10px);
       display:flex;
       gap:12px;
-      z-index:999;
     }
     .tabbtn{
       flex:1;
@@ -167,9 +196,8 @@
       color: var(--text);
       box-shadow: 0 10px 20px rgba(255,45,134,.10);
     }
-    .hidden{ display:none; }
+    .hidden{ display:none !important; }
 
-    /* Board: 2 columns that always fit */
     .board{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -177,7 +205,7 @@
       width:100%;
     }
     @media (max-width: 430px){
-      .board{ grid-template-columns: 1fr; } /* на очень узких — вертикально */
+      .board{ grid-template-columns: 1fr; }
     }
 
     .col{
@@ -209,9 +237,7 @@
       font-weight:950; color: var(--pink2);
       flex:0 0 auto;
     }
-    .who .names{
-      min-width:0;
-    }
+    .who .names{ min-width:0; }
     .who .names .t{
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       max-width: 100%;
@@ -224,9 +250,10 @@
 
     .daywrap{
       position:relative;
-      height: 760px;
+      height: 700px;
       overflow:auto;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+      -webkit-overflow-scrolling: touch;
     }
     .daygrid{
       position:relative;
@@ -262,6 +289,7 @@
       box-shadow: 0 10px 18px rgba(0,0,0,.35);
       cursor:pointer;
       overflow:hidden;
+      -webkit-tap-highlight-color: transparent;
     }
     .event .tt{
       font-weight:950;
@@ -277,7 +305,6 @@
     .event.any{ top: 10px; height: 70px; }
     .event.approx{ border-style:dashed; }
 
-    /* Notes section on Schedule */
     .notesBox .noteItem{
       padding:10px;
       border:1px solid rgba(255,255,255,.08);
@@ -295,7 +322,6 @@
       margin-bottom:6px;
     }
 
-    /* Fullscreen opaque modal for event notes */
     .backdrop{
       position:fixed;
       inset:0;
@@ -303,6 +329,7 @@
       display:none;
       z-index:2000;
       overflow:auto;
+      -webkit-overflow-scrolling: touch;
       padding:12px;
     }
     .modal{
@@ -365,16 +392,26 @@
 </head>
 
 <body>
-  <div class="topbar">
-    <div class="brand">
-      <span class="dot"></span>
-      Shared Schedule
-      <span class="badge">private ×2</span>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Shared Schedule</span>
+        <span class="badge">private ×2</span>
+      </div>
+      <div class="pill" id="statusPill"><span class="mono">…</span></div>
     </div>
-    <div class="pill" id="statusPill"><span class="mono">…</span></div>
-  </div>
 
-  <div id="app"></div>
+    <div class="content">
+      <div id="app"></div>
+    </div>
+
+    <div class="tabs hidden" id="tabs">
+      <button class="tabbtn" id="tabSchedule">Schedule</button>
+      <button class="tabbtn" id="tabCreate">Create</button>
+      <button class="tabbtn" id="tabProfile">Profile</button>
+    </div>
+  </div>
 
   <!-- Fullscreen event note modal -->
   <div class="backdrop" id="eventBackdrop">
@@ -404,14 +441,28 @@
     </div>
   </div>
 
-  <div class="tabs hidden" id="tabs">
-    <button class="tabbtn" id="tabSchedule">Schedule</button>
-    <button class="tabbtn" id="tabCreate">Create</button>
-    <button class="tabbtn" id="tabProfile">Profile</button>
-  </div>
-
   <script>
     const tg = window.Telegram?.WebApp;
+
+    function applyTelegramViewport(){
+      if(!tg) return;
+      tg.ready();
+      tg.expand();
+
+      const apply = ()=>{
+        const h = tg.viewportStableHeight || window.innerHeight;
+        document.documentElement.style.setProperty('--app-h', h + 'px');
+      };
+
+      apply();
+      tg.onEvent('viewportChanged', apply);
+    }
+
+    applyTelegramViewport();
+
+    function getCss(varName){
+      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    }
 
     const COLORS = [
       { id:"c1", hex:getCss("--c1") },
@@ -432,7 +483,7 @@
       dayData: null,
       since: null,
       pollTimer: null,
-      actionLock: false, // фикс “кнопки работают через раз”
+      actionLock: false,
 
       weeklyMask: 0,
 
@@ -458,7 +509,6 @@
     };
 
     function realPaired(){
-      // КЛЮЧЕВОЕ: пока нет otherUserId — считаем, что связи нет
       return (state.me?.paired === true) && !!state.me?.otherUserId;
     }
 
@@ -503,10 +553,6 @@
       const m = min%60;
       return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
     }
-
-    function getCss(varName){
-      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-    }
     function colorHex(id){
       return (COLORS.find(c=>c.id===id)?.hex) || getCss("--pink");
     }
@@ -527,7 +573,6 @@
     function startPolling(){
       stopPolling();
       state.pollTimer = setInterval(async ()=>{
-        // polling не должен сбрасывать Create форму
         if(state.screen === "schedule" || state.screen === "profile"){
           await loadDay(false);
         }
@@ -540,7 +585,6 @@
         const data = await res.json();
         state.me = data;
 
-        // Показываем в pill “paired” только если реально есть второй
         setPill(realPaired() ? "paired" : "need pairing");
 
         if(!realPaired()){
@@ -576,8 +620,8 @@
           for(const e of (data.events||[])) map.set(e.eventKey, e);
           state.dayData.events = Array.from(map.values());
 
-          // notes can arrive incrementally
           state.dayData.notes = (state.dayData.notes||[]).concat(data.notes||[]);
+          state.dayData.dayNotes = (state.dayData.dayNotes||[]).concat(data.dayNotes||[]);
           state.dayData.members = data.members || state.dayData.members;
         }
         state.since = data.serverTime;
@@ -618,10 +662,42 @@
           await loadDay(true);
           startPolling();
         } else {
-          toast("Похоже второй ещё не подключился. Создай/введи PIN ещё раз.");
+          toast("Похоже второй ещё не подключился.");
         }
       }catch(e){ state.error = e.message; }
       render();
+    }
+
+    async function leaveSpaceFrontend(){
+      try{
+        const res = await apiFetch("/api/space/leave", { method:"POST", body:"{}" });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "leave_failed");
+        toast("Ок: вышел из space");
+        state.lastPin = null;
+        state.dayData = null;
+        state.since = null;
+        await loadMe();
+        render();
+      }catch(e){
+        toast("Ошибка: " + e.message);
+      }
+    }
+
+    async function resetSpaceFrontend(){
+      try{
+        const res = await apiFetch("/api/space/reset", { method:"POST", body:"{}" });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "reset_failed");
+        toast("Ок: space сброшен");
+        state.lastPin = null;
+        state.dayData = null;
+        state.since = null;
+        await loadMe();
+        render();
+      }catch(e){
+        toast("Ошибка: " + e.message);
+      }
     }
 
     function copyText(text){
@@ -708,7 +784,6 @@
       });
     }
 
-    // Fullscreen event modal
     function openEventModal(){ document.getElementById("eventBackdrop").style.display = "block"; }
     function closeEventModal(){
       document.getElementById("eventBackdrop").style.display = "none";
@@ -786,7 +861,6 @@
       }
     }
 
-    // Create UI helpers
     function buildColorRow(){
       const row = document.getElementById("colorRow");
       row.innerHTML = COLORS.map(c=>{
@@ -834,9 +908,6 @@
     }
 
     function bindCreateInputs(){
-      // ЧИНИМ баг: поле “Название” сбрасывалось
-      // Причина: render() перерисовывал Create экран (из-за poll/loadDay/toast)
-      // Фикс: хранить значения в state.form и обновлять по input
       const title = document.getElementById("fTitle");
       const timeKind = document.getElementById("fTimeKind");
       const start = document.getElementById("fStart");
@@ -864,7 +935,6 @@
       cycP.oninput = (e)=> state.form.cyclePattern = e.target.value;
       cycA.oninput = (e)=> state.form.cycleAnchor = e.target.value;
 
-      state.weeklyMask = state.weeklyMask || 0;
       buildColorRow();
       syncRecurrenceUI();
       setWeeklyBtnStyles();
@@ -937,7 +1007,6 @@
       }
     }
 
-    // Notes by DATE (no time) — use API /api/daynote (мы добавим на backend ниже)
     async function saveDayNote(){
       const date = state.noteForm.date.trim();
       const text = state.noteForm.text.trim();
@@ -953,7 +1022,7 @@
         if(!res.ok) throw new Error(data.error || "daynote_failed");
         state.noteForm.text = "";
         toast("Заметка добавлена");
-        state.date = date;           // сразу переключаемся на дату заметки
+        state.date = date;
         state.screen = "schedule";
         setActiveTab("schedule");
         state.since = null;
@@ -997,13 +1066,10 @@
       }
 
       if(!realPaired()){
-        // pairing screen ALWAYS until otherUserId exists
         root.innerHTML = `
           <div class="card">
             <h2>Связь по PIN</h2>
-            <div class="muted">
-              Сейчас связи нет (нужен второй участник). Создай PIN и отправь партнёру — или введи PIN от него.
-            </div>
+            <div class="muted">Связи нет — сначала подключи второго человека.</div>
             <div class="divider"></div>
             <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
             <div style="height:8px;"></div>
@@ -1051,13 +1117,12 @@
         return;
       }
 
-      // paired UI
       document.getElementById("tabs").classList.remove("hidden");
 
       if(state.screen === "schedule"){
         setActiveTab("schedule");
 
-        const dayNotes = (state.dayData?.dayNotes || []).slice().reverse(); // newest first
+        const dayNotes = (state.dayData?.dayNotes || []).slice().reverse();
 
         root.innerHTML = `
           <div class="card">
@@ -1111,7 +1176,6 @@
           ${errLine}
         `;
 
-        // stable date buttons (lock)
         document.getElementById("btnPrev").onclick = ()=>safeDateNav(-1);
         document.getElementById("btnNext").onclick = ()=>safeDateNav(+1);
         document.getElementById("btnToday").onclick = ()=>safeSetDate(todayISO());
@@ -1121,7 +1185,6 @@
 
         renderColumn("colMe", myId(), "You");
         renderColumn("colOther", otherId(), "Partner");
-
         return;
       }
 
@@ -1209,7 +1272,6 @@
           ${errLine}
         `;
 
-        // segment
         document.getElementById("segEvent").onclick = ()=>{ state.createMode="event"; render(); };
         document.getElementById("segNote").onclick = ()=>{ state.createMode="note"; render(); };
 
@@ -1224,7 +1286,6 @@
           nText.oninput = (e)=> state.noteForm.text = e.target.value;
           document.getElementById("btnSaveNote").onclick = saveDayNote;
         }
-
         return;
       }
 
@@ -1241,17 +1302,30 @@
             <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
+
+            <div class="divider"></div>
+
+            <!-- ✅ FIX already_paired -->
+            <button class="btn-danger" id="btnLeaveSpace">Выйти из space (fix already_paired)</button>
+            <div style="height:10px;"></div>
+            <button class="btn-danger" id="btnResetSpace">OWNER: Reset space</button>
+
             <div class="divider"></div>
             <button class="btn-ghost" id="btnProfileRefresh">Обновить</button>
           </div>
-
           ${errLine}
         `;
+
         document.getElementById("btnProfileRefresh").onclick = async ()=>{
           await loadMe();
           await loadDay(true);
           render();
         };
+
+        // ✅ NEW кнопки
+        document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
+        document.getElementById("btnResetSpace").onclick = resetSpaceFrontend;
+
         return;
       }
     }
@@ -1324,7 +1398,6 @@
 
     async function init(){
       state.error = null;
-      if(tg) tg.ready();
       wireGlobal();
       await loadMe();
       if(realPaired()){

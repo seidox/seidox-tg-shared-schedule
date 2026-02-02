@@ -6,6 +6,9 @@ import { requireTelegramAuth } from "./auth/telegramAuth";
 import { spaceRouter } from "./routes/space";
 import { getMembershipByUser } from "./repo";
 import path from "path";
+import { dayRouter } from "./routes/day";
+import { seriesRouter } from "./routes/series";
+import { notesRouter } from "./routes/notes";
 
 
 dotenv.config();
@@ -61,4 +64,7 @@ app.get("/api/me", requireTelegramAuth, (req, res) => {
 });
 
 app.use("/api/space", spaceRouter);
+app.use("/api", dayRouter);
+app.use("/api/series", seriesRouter);
+app.use("/api/note", notesRouter);
 

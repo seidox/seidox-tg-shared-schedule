@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Shared Schedule</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
   <!-- Telegram WebApp -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -25,12 +25,37 @@
       font-size: 16px;
       margin-top: 12px;
     }
+    input, textarea {
+      font-size: 16px;
+    }
+    .hidden {
+      display: none;
+    }
+    .card {
+      background: #fff;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .muted {
+      color: #666;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <h2>Telegram Mini App</h2>
 
-  <button id="btn">Запросить /api/me</button>
+  <div id="pairing" class="card hidden">
+    <div class="muted">Связи нет. Подключи второго человека по PIN.</div>
+    <button id="btnLeave">Сбросить связь</button>
+  </div>
+
+  <div id="paired" class="card hidden">
+    <div class="muted">Связь активна.</div>
+  </div>
+
+  <button id="btn">Обновить /api/me</button>
 
   <pre id="output">Нажми кнопку</pre>
 
@@ -40,19 +65,52 @@
 
     const output = document.getElementById("output");
     const btn = document.getElementById("btn");
+    const pairing = document.getElementById("pairing");
+    const paired = document.getElementById("paired");
+    const btnLeave = document.getElementById("btnLeave");
+
+    function renderMe(data) {
+      const isPaired = data?.paired === true && data?.membersCount === 2;
+      pairing.classList.toggle("hidden", isPaired);
+      paired.classList.toggle("hidden", !isPaired);
+      output.textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function loadMe() {
+      const res = await fetch("/api/me", {
+        headers: {
+          "X-TG-INIT-DATA": tg.initData
+        }
+      });
+      const data = await res.json();
+      renderMe(data);
+    }
+
+    async function leaveSpace() {
+      await fetch("/api/space/leave", {
+        method: "POST",
+        headers: {
+          "X-TG-INIT-DATA": tg.initData,
+          "Content-Type": "application/json"
+        },
+        body: "{}"
+      });
+      await loadMe();
+    }
 
     btn.onclick = async () => {
       output.textContent = "Запрос...";
-
       try {
-        const res = await fetch("/api/me", {
-          headers: {
-            "X-TG-INIT-DATA": tg.initData
-          }
-        });
+        await loadMe();
+      } catch (e) {
+        output.textContent = "Ошибка: " + e.message;
+      }
+    };
 
-        const data = await res.json();
-        output.textContent = JSON.stringify(data, null, 2);
+    btnLeave.onclick = async () => {
+      output.textContent = "Сброс...";
+      try {
+        await leaveSpace();
       } catch (e) {
         output.textContent = "Ошибка: " + e.message;
       }

@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { migrate } from "./db";
 import { requireTelegramAuth } from "./auth/telegramAuth";
 import { spaceRouter } from "./routes/space";
-import { getMembershipByUser, getOtherUserId } from "./repo";
+import { getMembershipByUser } from "./repo";
 import path from "path";
 import { dayRouter } from "./routes/day";
 import { seriesRouter } from "./routes/series";
@@ -40,7 +40,7 @@ const port = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 
 app.get("/api/me", requireTelegramAuth, (req, res) => {
-  const tgUserId = String((req as any).tgUserId);
+  const tgUserId = req.user!.tgUserId;
 
   const membership = getMembershipByUser(tgUserId);
   if (!membership) {
@@ -49,18 +49,19 @@ app.get("/api/me", requireTelegramAuth, (req, res) => {
       spaceId: null,
       paired: false,
       otherUserId: null,
+      membersCount: 0,
     });
   }
 
-  const spaceId = Number(membership.spaceId);
-  const otherUserId = getOtherUserId(spaceId, tgUserId);
-  const paired = otherUserId !== null; // ВАЖНО: paired только если реально есть второй
+  const membersCount = Number(membership.membersCount);
+  const paired = membersCount === 2;
 
   return res.json({
     tgUserId,
-    spaceId,
+    spaceId: Number(membership.spaceId),
     paired,
-    otherUserId,
+    otherUserId: membership.otherUserId,
+    membersCount,
   });
 });
 

@@ -5,6 +5,7 @@ import { migrate } from "./db";
 import { requireTelegramAuth } from "./auth/telegramAuth";
 import { spaceRouter } from "./routes/space";
 import { getMembershipByUser } from "./repo";
+import path from "path";
 
 
 dotenv.config();
@@ -14,6 +15,10 @@ app.use(cors());
 app.use(express.json());
 
 migrate();
+
+// Serve frontend in production
+const frontendPath = path.join(process.cwd(), "../frontend");
+app.use(express.static(frontendPath));
 
 
 app.get("/health", (_req, res) => {

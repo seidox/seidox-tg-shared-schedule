@@ -4,7 +4,13 @@ import dotenv from "dotenv";
 import { migrate } from "./db";
 import { requireTelegramAuth } from "./auth/telegramAuth";
 import { spaceRouter } from "./routes/space";
-import { getMembershipByUser } from "./repo";
+import {
+  getMembershipByUser,
+  getOtherUserId,
+  getMemberIds,
+  addDayNote,
+  getDayNotes,
+} from "./repo";
 import path from "path";
 import { dayRouter } from "./routes/day";
 import { seriesRouter } from "./routes/series";
@@ -39,32 +45,37 @@ app.get("/health", (_req, res) => {
 const port = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 
-app.listen(port, () => {
-  console.log(`Backend listening on http://localhost:${port}`);
-});
-
 app.get("/api/me", requireTelegramAuth, (req, res) => {
-  const tgUserId = req.user!.tgUserId;
-  const membership = getMembershipByUser(tgUserId);
+  const tgUserId = String((req as any).tgUserId);
 
+  const membership = getMembershipByUser(tgUserId);
   if (!membership) {
     return res.json({
       tgUserId,
-      paired: false
+      spaceId: null,
+      paired: false,
+      otherUserId: null,
     });
   }
 
+  const spaceId = Number(membership.spaceId);
+  const otherUserId = getOtherUserId(spaceId, tgUserId);
+  const paired = otherUserId !== null; // ВАЖНО: paired только если реально есть второй
+
   return res.json({
     tgUserId,
-    paired: true,
-    spaceId: membership.spaceId,
-    role: membership.role,
-    otherUserId: membership.otherUserId
+    spaceId,
+    paired,
+    otherUserId,
   });
 });
+
 
 app.use("/api/space", spaceRouter);
 app.use("/api", dayRouter);
 app.use("/api/series", seriesRouter);
 app.use("/api/note", notesRouter);
 
+app.listen(port, () => {
+  console.log(`Backend listening on http://localhost:${port}`);
+});

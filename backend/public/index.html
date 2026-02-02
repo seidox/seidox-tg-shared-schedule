@@ -10,7 +10,6 @@
     :root{
       --bg:#0b0b10;
       --card:#12121a;
-      --card2:#161622;
       --text:#f4f4ff;
       --muted:#a7a7c2;
       --border:#242436;
@@ -28,23 +27,37 @@
       --c6:#facc15;
     }
 
+    html, body{
+      height:100%;
+      overscroll-behavior: none; /* меньше “плывёт” */
+    }
+
     *{ box-sizing:border-box; }
     body{
       margin:0;
-      padding:16px 16px 92px;
+      padding:16px 16px 106px; /* место под большой таб-бар */
       font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      background: radial-gradient(1200px 800px at 40% -10%, rgba(255,45,134,.22), transparent 60%),
-                  radial-gradient(900px 600px at 110% 10%, rgba(168,85,247,.18), transparent 60%),
+      background: radial-gradient(1200px 800px at 40% -10%, rgba(255,45,134,.20), transparent 60%),
+                  radial-gradient(900px 600px at 110% 10%, rgba(168,85,247,.16), transparent 60%),
                   var(--bg);
       color:var(--text);
+      -webkit-overflow-scrolling: auto; /* меньше инерции */
+      touch-action: manipulation;       /* меньше случайных “движений” */
     }
 
     .topbar{
       display:flex; align-items:center; justify-content:space-between;
       gap:10px; margin-bottom:12px;
     }
-    .brand{ font-weight:900; letter-spacing:.2px; display:flex; align-items:center; gap:10px; }
-    .dot{ width:9px; height:9px; border-radius:999px; background:var(--pink); box-shadow:0 0 0 4px rgba(255,45,134,.15); }
+    .brand{
+      font-weight:950; letter-spacing:.2px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .dot{
+      width:9px; height:9px; border-radius:999px;
+      background:var(--pink);
+      box-shadow:0 0 0 4px rgba(255,45,134,.15);
+    }
     .badge{
       font-size:12px; padding:4px 8px; border:1px solid var(--border);
       border-radius:999px; background:rgba(255,255,255,.03); color:var(--muted);
@@ -66,6 +79,7 @@
     }
     .card h2{ margin:0 0 10px 0; font-size:16px; letter-spacing:.2px; }
     .muted{ color:var(--muted); font-size:13px; line-height:1.35; }
+
     .row{ display:flex; gap:10px; align-items:center; }
     .row > *{ flex:1; }
 
@@ -79,7 +93,7 @@
       outline:none;
       font-size:15px;
     }
-    textarea{ min-height:100px; resize:vertical; }
+    textarea{ min-height:110px; resize:vertical; }
 
     button{
       width:100%;
@@ -88,12 +102,14 @@
       border:1px solid transparent;
       background:rgba(255,255,255,.06);
       color:var(--text);
-      font-weight:750;
+      font-weight:850;
       cursor:pointer;
-      transition:.15s ease;
+      transition:.12s ease;
     }
-    button:active{ transform:translateY(1px); }
+    /* убрал transform: translateY — меньше “плывёт” */
+    button:active{ filter: brightness(1.05); }
     button:disabled{ opacity:.55; cursor:not-allowed; }
+
     .btn-pink{
       background: linear-gradient(180deg, rgba(255,45,134,.95), rgba(255,45,134,.75));
       border-color: rgba(255,45,134,.35);
@@ -109,6 +125,8 @@
       border-color: rgba(255,77,77,.25);
     }
 
+    .divider{ height:1px; background:rgba(255,255,255,.06); margin:12px 0; }
+
     .pin{
       font-size:30px;
       letter-spacing:6px;
@@ -118,50 +136,56 @@
       color:var(--pink2);
       text-shadow:0 0 18px rgba(255,102,176,.25);
     }
-    .ok{ color:var(--good); font-weight:800; }
-    .err{ color:var(--bad); font-weight:800; }
+    .err{ color:var(--bad); font-weight:900; }
 
-    .divider{ height:1px; background:rgba(255,255,255,.06); margin:12px 0; }
-
-    /* Bottom tabs */
+    /* Big bottom tabs */
     .tabs{
       position:fixed;
       left:0; right:0; bottom:0;
-      padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-      background: rgba(11,11,16,.94);
-      border-top:1px solid rgba(255,255,255,.08);
+      padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+      background: rgba(11,11,16,.96);
+      border-top:1px solid rgba(255,255,255,.10);
       backdrop-filter: blur(10px);
       display:flex;
-      gap:10px;
+      gap:12px;
       z-index:999;
     }
     .tabbtn{
       flex:1;
-      padding:12px 10px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.04);
+      padding:16px 10px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
       color: var(--muted);
-      font-weight:850;
+      font-weight:950;
+      font-size:14px;
+      letter-spacing:.2px;
     }
     .tabbtn.active{
-      background: rgba(255,45,134,.18);
-      border-color: rgba(255,45,134,.45);
+      background: rgba(255,45,134,.22);
+      border-color: rgba(255,45,134,.50);
       color: var(--text);
       box-shadow: 0 10px 20px rgba(255,45,134,.10);
     }
+    .hidden{ display:none; }
 
-    /* Vertical day board */
+    /* Board: 2 columns that always fit */
     .board{
-      display:flex;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
       gap:12px;
+      width:100%;
     }
+    @media (max-width: 430px){
+      .board{ grid-template-columns: 1fr; } /* на очень узких — вертикально */
+    }
+
     .col{
-      flex:1;
       background: rgba(255,255,255,.03);
       border:1px solid var(--border);
       border-radius:16px;
       overflow:hidden;
+      min-width:0;
     }
     .colhead{
       padding:12px;
@@ -175,6 +199,7 @@
     .who{
       display:flex; align-items:center; gap:10px;
       font-weight:950;
+      min-width:0;
     }
     .avatar{
       width:34px; height:34px; border-radius:12px;
@@ -182,19 +207,31 @@
       border:1px solid rgba(255,45,134,.28);
       display:flex; align-items:center; justify-content:center;
       font-weight:950; color: var(--pink2);
+      flex:0 0 auto;
     }
-    .colhead small{ display:block; font-weight:700; font-size:12px; color:var(--muted); margin-top:2px; }
+    .who .names{
+      min-width:0;
+    }
+    .who .names .t{
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      max-width: 100%;
+    }
+    .who small{
+      display:block; font-weight:700; font-size:12px; color:var(--muted); margin-top:2px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      max-width: 100%;
+    }
 
     .daywrap{
       position:relative;
-      height: 980px;      /* видимая высота */
-      overflow:auto;      /* скролл внутри суток */
+      height: 760px;
+      overflow:auto;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
     }
     .daygrid{
       position:relative;
-      height: 1440px;     /* 1px = 1 минута (простая математика) */
-      min-height: 1440px;
+      height: 1440px;
+      min-height:1440px;
     }
     .hline{
       position:absolute;
@@ -208,7 +245,7 @@
       transform: translateY(-50%);
       font-size:11px;
       color: rgba(244,244,255,.42);
-      background: rgba(11,11,16,.65);
+      background: rgba(11,11,16,.70);
       border:1px solid rgba(255,255,255,.08);
       border-radius:999px;
       padding:3px 8px;
@@ -226,31 +263,43 @@
       cursor:pointer;
       overflow:hidden;
     }
-    .event .t{
+    .event .tt{
       font-weight:950;
       font-size:12px;
-      line-height:1.1;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       margin-bottom:3px;
     }
-    .event .s{
+    .event .ss{
       font-size:11px;
       color: rgba(244,244,255,.78);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
-    .event.any{
-      top: 10px;
-      height: 70px;
+    .event.any{ top: 10px; height: 70px; }
+    .event.approx{ border-style:dashed; }
+
+    /* Notes section on Schedule */
+    .notesBox .noteItem{
+      padding:10px;
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      background: rgba(255,255,255,.03);
+      margin-bottom:10px;
     }
-    .event.approx{
-      border-style: dashed;
+    .notesBox .noteMeta{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color: var(--muted);
+      font-size:12px;
+      margin-bottom:6px;
     }
 
-    /* Opaque modals (bug #2 fix) */
+    /* Fullscreen opaque modal for event notes */
     .backdrop{
       position:fixed;
       inset:0;
-      background: var(--bg); /* полностью непрозрачный */
+      background: var(--bg);
       display:none;
       z-index:2000;
       overflow:auto;
@@ -258,8 +307,8 @@
     }
     .modal{
       max-width:620px;
-      margin: 0 auto;
-      background: var(--card);  /* непрозрачный */
+      margin:0 auto;
+      background: var(--card);
       border:1px solid var(--border);
       border-radius:20px;
       box-shadow:var(--shadow);
@@ -284,8 +333,7 @@
     .colorbtn{
       width:42px; height:42px; border-radius:14px;
       border:1px solid rgba(255,255,255,.12);
-      cursor:pointer;
-      position:relative;
+      cursor:pointer; position:relative;
     }
     .colorbtn.sel::after{
       content:"";
@@ -294,7 +342,25 @@
       border:2px solid rgba(255,255,255,.85);
     }
 
-    .hidden{ display:none; }
+    .seg{
+      display:flex;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .seg button{
+      flex:1;
+      padding:12px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-weight:950;
+    }
+    .seg button.active{
+      background: rgba(255,45,134,.20);
+      border-color: rgba(255,45,134,.45);
+      color: var(--text);
+    }
   </style>
 </head>
 
@@ -310,30 +376,30 @@
 
   <div id="app"></div>
 
-  <!-- Create screen uses this same form block (not as modal) -->
-  <div class="backdrop" id="noteBackdrop">
+  <!-- Fullscreen event note modal -->
+  <div class="backdrop" id="eventBackdrop">
     <div class="modal">
       <div class="modalhead">
-        <h3 id="noteTitle">Событие</h3>
-        <button class="closeX" id="noteClose">✕</button>
+        <h3 id="eventTitle">Событие</h3>
+        <button class="closeX" id="eventClose">✕</button>
       </div>
 
       <div class="card" style="margin:0; box-shadow:none;">
-        <div id="noteMeta" class="muted" style="margin-bottom:10px;"></div>
+        <div id="eventMeta" class="muted" style="margin-bottom:10px;"></div>
 
         <div class="row" style="margin-bottom:10px;">
-          <button class="btn-ghost" id="btnAddNote">Добавить заметку</button>
+          <button class="btn-ghost" id="btnAddEventNote">Добавить заметку к событию</button>
           <button class="btn-danger" id="btnDeleteSeries">Удалить событие</button>
         </div>
 
-        <div id="addNoteBox" class="hidden">
-          <textarea id="noteText" placeholder="Заметка (видна обоим)"></textarea>
-          <button class="btn-pink" id="btnSendNote">Отправить заметку</button>
+        <div id="addEventNoteBox" class="hidden">
+          <textarea id="eventNoteText" placeholder="Заметка к событию (видна обоим)"></textarea>
+          <button class="btn-pink" id="btnSendEventNote">Отправить</button>
         </div>
 
         <div class="divider"></div>
-        <div class="muted" style="margin-bottom:8px;">Заметки на дату:</div>
-        <div id="notesList" class="muted"></div>
+        <div class="muted" style="margin-bottom:8px;">Заметки к этому событию (на дату):</div>
+        <div id="eventNotesList" class="muted"></div>
       </div>
     </div>
   </div>
@@ -360,29 +426,41 @@
       me: null,
       lastPin: null,
       error: null,
-      date: todayISO(),
 
+      screen: "boot", // boot | pair | schedule | create | profile
+      date: todayISO(),
       dayData: null,
       since: null,
       pollTimer: null,
+      actionLock: false, // фикс “кнопки работают через раз”
 
-      screen: "boot", // boot | pair | schedule | create | profile
       weeklyMask: 0,
 
-      createForm: {
-        title:"",
-        color:"c1",
-        timeKind:"exact",
-        start:"09:00",
-        end:"18:00",
-        recurrence:"none",
+      createMode: "event", // event | note
+      form: {
+        title: "",
+        timeKind: "exact",
+        start: "09:00",
+        end: "18:00",
+        recurrence: "none",
         singleDate: todayISO(),
-        cyclePattern:"1100",
-        cycleAnchor: todayISO()
+        cyclePattern: "1100",
+        cycleAnchor: todayISO(),
+        color: "c1"
+      },
+
+      noteForm: {
+        date: todayISO(),
+        text: ""
       },
 
       selectedEvent: null
     };
+
+    function realPaired(){
+      // КЛЮЧЕВОЕ: пока нет otherUserId — считаем, что связи нет
+      return (state.me?.paired === true) && !!state.me?.otherUserId;
+    }
 
     function apiFetch(path, options = {}) {
       if (!tg || !tg.initData) throw new Error("Telegram WebApp initData not found");
@@ -448,7 +526,12 @@
     }
     function startPolling(){
       stopPolling();
-      state.pollTimer = setInterval(()=> loadDay(false), 4000);
+      state.pollTimer = setInterval(async ()=>{
+        // polling не должен сбрасывать Create форму
+        if(state.screen === "schedule" || state.screen === "profile"){
+          await loadDay(false);
+        }
+      }, 4500);
     }
 
     async function loadMe(){
@@ -457,10 +540,10 @@
         const data = await res.json();
         state.me = data;
 
-        const paired = (data?.paired === true); // фикс бага №1 (строго boolean)
-        setPill(paired ? "paired" : "not paired");
+        // Показываем в pill “paired” только если реально есть второй
+        setPill(realPaired() ? "paired" : "need pairing");
 
-        if(!paired){
+        if(!realPaired()){
           state.screen = "pair";
           document.getElementById("tabs").classList.add("hidden");
           stopPolling();
@@ -475,10 +558,12 @@
     }
 
     async function loadDay(resetSince=false){
-      if(!(state.me?.paired === true)) return;
+      if(!realPaired()) return;
+
       try{
         const qs = new URLSearchParams({ date: state.date });
         if(!resetSince && state.since) qs.set("since", state.since);
+
         const res = await apiFetch("/api/day?"+qs.toString());
         const data = await res.json();
         if(!res.ok) throw new Error(data.error || "day_failed");
@@ -490,6 +575,8 @@
           const map = new Map((state.dayData.events||[]).map(e=>[e.eventKey,e]));
           for(const e of (data.events||[])) map.set(e.eventKey, e);
           state.dayData.events = Array.from(map.values());
+
+          // notes can arrive incrementally
           state.dayData.notes = (state.dayData.notes||[]).concat(data.notes||[]);
           state.dayData.members = data.members || state.dayData.members;
         }
@@ -497,7 +584,10 @@
       } catch(e){
         state.error = e.message;
       }
-      render();
+
+      if(state.screen === "schedule" || state.screen === "profile"){
+        render();
+      }
     }
 
     async function createPair(){
@@ -516,12 +606,20 @@
       state.error=null;
       render();
       try{
-        const res = await apiFetch("/api/space/join", { method:"POST", body: JSON.stringify({ pin }) });
+        const res = await apiFetch("/api/space/join", {
+          method:"POST",
+          body: JSON.stringify({ pin })
+        });
         const data = await res.json();
         if(!res.ok) throw new Error(data.error || "join_failed");
+
         await loadMe();
-        await loadDay(true);
-        startPolling();
+        if(realPaired()){
+          await loadDay(true);
+          startPolling();
+        } else {
+          toast("Похоже второй ещё не подключился. Создай/введи PIN ещё раз.");
+        }
       }catch(e){ state.error = e.message; }
       render();
     }
@@ -553,8 +651,8 @@
           <div class="colhead">
             <div class="who">
               <div class="avatar">${escapeHtml(label.slice(0,1).toUpperCase())}</div>
-              <div>
-                ${escapeHtml(label)}
+              <div class="names">
+                <div class="t">${escapeHtml(label)}</div>
                 <small class="mono">${escapeHtml(String(userId || "—"))}</small>
               </div>
             </div>
@@ -562,7 +660,7 @@
           </div>
 
           <div class="daywrap">
-            <div class="daygrid" id="${elId}_grid">
+            <div class="daygrid">
       `;
 
       for(let h=0; h<=24; h++){
@@ -587,8 +685,8 @@
         html += `
           <div class="${cls}" data-key="${escapeHtml(e.eventKey)}"
                style="top:${top}px; height:${height}px; background:${col}bb;">
-            <div class="t">${escapeHtml(e.title)}</div>
-            <div class="s">${escapeHtml(makeTimeLabel(e))}</div>
+            <div class="tt">${escapeHtml(e.title)}</div>
+            <div class="ss">${escapeHtml(makeTimeLabel(e))}</div>
           </div>
         `;
       }
@@ -610,26 +708,26 @@
       });
     }
 
-    // Notes modal
-    function openNoteModal(){ document.getElementById("noteBackdrop").style.display = "block"; }
-    function closeNoteModal(){
-      document.getElementById("noteBackdrop").style.display = "none";
-      document.getElementById("addNoteBox").classList.add("hidden");
-      document.getElementById("noteText").value = "";
+    // Fullscreen event modal
+    function openEventModal(){ document.getElementById("eventBackdrop").style.display = "block"; }
+    function closeEventModal(){
+      document.getElementById("eventBackdrop").style.display = "none";
+      document.getElementById("addEventNoteBox").classList.add("hidden");
+      document.getElementById("eventNoteText").value = "";
       state.selectedEvent = null;
     }
 
     function openEventDetails(ev){
       state.selectedEvent = ev;
-      document.getElementById("noteTitle").textContent = ev.title;
-      document.getElementById("noteMeta").innerHTML = `
+      document.getElementById("eventTitle").textContent = ev.title;
+      document.getElementById("eventMeta").innerHTML = `
         <div class="pill">Дата: <span class="mono">${escapeHtml(state.date)}</span></div>
         <div class="pill">Время: <span class="mono">${escapeHtml(makeTimeLabel(ev))}</span></div>
         <div class="pill">Owner: <span class="mono">${escapeHtml(String(ev.ownerTgUserId))}</span></div>
         <div class="pill">SeriesId: <span class="mono">${escapeHtml(String(ev.seriesId))}</span></div>
       `;
 
-      const notes = (state.dayData?.notes||[]).filter(n=>Number(n.seriesId)===Number(ev.seriesId));
+      const notes = (state.dayData?.notes||[]).filter(n => Number(n.seriesId) === Number(ev.seriesId));
       const list = notes.map(n=>{
         const who = String(n.authorTgUserId)===String(myId()) ? "you" : "other";
         return `<div class="pill" style="margin:8px 0;">
@@ -637,7 +735,7 @@
           <b>${escapeHtml(who)}</b>: ${escapeHtml(n.text)}
         </div>`;
       }).join("");
-      document.getElementById("notesList").innerHTML = list || `<div class="muted">Пока нет заметок.</div>`;
+      document.getElementById("eventNotesList").innerHTML = list || `<div class="muted">Пока нет.</div>`;
 
       const delBtn = document.getElementById("btnDeleteSeries");
       if(String(ev.ownerTgUserId) !== String(myId())){
@@ -648,13 +746,13 @@
         delBtn.textContent = "Удалить событие";
       }
 
-      openNoteModal();
+      openEventModal();
     }
 
-    async function sendNote(){
+    async function sendEventNote(){
       const ev = state.selectedEvent;
       if(!ev) return;
-      const text = document.getElementById("noteText").value.trim();
+      const text = document.getElementById("eventNoteText").value.trim();
       if(!text){ toast("Введите текст заметки"); return; }
       try{
         const res = await apiFetch("/api/note", {
@@ -663,10 +761,10 @@
         });
         const data = await res.json();
         if(!res.ok) throw new Error(data.error || "note_failed");
-        document.getElementById("noteText").value = "";
-        document.getElementById("addNoteBox").classList.add("hidden");
+        document.getElementById("eventNoteText").value = "";
+        document.getElementById("addEventNoteBox").classList.add("hidden");
         await loadDay(true);
-        toast("Заметка добавлена");
+        toast("Ок");
       }catch(e){
         toast("Ошибка: "+e.message);
       }
@@ -680,7 +778,7 @@
         const res = await apiFetch("/api/series/"+ev.seriesId, { method:"DELETE" });
         const data = await res.json();
         if(!res.ok) throw new Error(data.error || "delete_failed");
-        closeNoteModal();
+        closeEventModal();
         await loadDay(true);
         toast("Удалено");
       }catch(e){
@@ -688,29 +786,18 @@
       }
     }
 
-    // Create page helpers
+    // Create UI helpers
     function buildColorRow(){
       const row = document.getElementById("colorRow");
       row.innerHTML = COLORS.map(c=>{
-        const sel = state.createForm.color === c.id ? "sel" : "";
+        const sel = state.form.color === c.id ? "sel" : "";
         return `<div class="colorbtn ${sel}" data-c="${c.id}" style="background:${c.hex};"></div>`;
       }).join("");
       row.querySelectorAll(".colorbtn").forEach(btn=>{
         btn.addEventListener("click", ()=>{
-          state.createForm.color = btn.getAttribute("data-c");
+          state.form.color = btn.getAttribute("data-c");
           buildColorRow();
         });
-      });
-    }
-
-    function setWeeklyBtnStyles(){
-      const box = document.getElementById("weeklyBox");
-      box.querySelectorAll("button[data-d]").forEach(b=>{
-        const d = Number(b.getAttribute("data-d"));
-        const on = (state.weeklyMask & (1<<d)) !== 0;
-        b.style.borderColor = on ? "rgba(255,45,134,.55)" : "var(--border)";
-        b.style.color = on ? "var(--text)" : "var(--muted)";
-        b.style.background = on ? "rgba(255,45,134,.22)" : "rgba(255,255,255,.04)";
       });
     }
 
@@ -735,26 +822,80 @@
       }
     }
 
-    async function saveEventFromCreate(){
-      const title = document.getElementById("fTitle").value.trim();
-      const timeKind = document.getElementById("fTimeKind").value;
-      const start = document.getElementById("fStart").value.trim();
-      const end = document.getElementById("fEnd").value.trim();
-      const recurrence = document.getElementById("fRecurrence").value;
+    function setWeeklyBtnStyles(){
+      const box = document.getElementById("weeklyBox");
+      box.querySelectorAll("button[data-d]").forEach(b=>{
+        const d = Number(b.getAttribute("data-d"));
+        const on = (state.weeklyMask & (1<<d)) !== 0;
+        b.style.borderColor = on ? "rgba(255,45,134,.55)" : "var(--border)";
+        b.style.color = on ? "var(--text)" : "var(--muted)";
+        b.style.background = on ? "rgba(255,45,134,.22)" : "rgba(255,255,255,.04)";
+      });
+    }
+
+    function bindCreateInputs(){
+      // ЧИНИМ баг: поле “Название” сбрасывалось
+      // Причина: render() перерисовывал Create экран (из-за poll/loadDay/toast)
+      // Фикс: хранить значения в state.form и обновлять по input
+      const title = document.getElementById("fTitle");
+      const timeKind = document.getElementById("fTimeKind");
+      const start = document.getElementById("fStart");
+      const end = document.getElementById("fEnd");
+      const rec = document.getElementById("fRecurrence");
+      const single = document.getElementById("fSingleDate");
+      const cycP = document.getElementById("fCyclePattern");
+      const cycA = document.getElementById("fCycleAnchor");
+
+      title.value = state.form.title;
+      timeKind.value = state.form.timeKind;
+      start.value = state.form.start;
+      end.value = state.form.end;
+      rec.value = state.form.recurrence;
+      single.value = state.form.singleDate;
+      cycP.value = state.form.cyclePattern;
+      cycA.value = state.form.cycleAnchor;
+
+      title.oninput = (e)=> state.form.title = e.target.value;
+      timeKind.onchange = (e)=> state.form.timeKind = e.target.value;
+      start.oninput = (e)=> state.form.start = e.target.value;
+      end.oninput = (e)=> state.form.end = e.target.value;
+      rec.onchange = (e)=>{ state.form.recurrence = e.target.value; syncRecurrenceUI(); };
+      single.oninput = (e)=> state.form.singleDate = e.target.value;
+      cycP.oninput = (e)=> state.form.cyclePattern = e.target.value;
+      cycA.oninput = (e)=> state.form.cycleAnchor = e.target.value;
+
+      state.weeklyMask = state.weeklyMask || 0;
+      buildColorRow();
+      syncRecurrenceUI();
+      setWeeklyBtnStyles();
+
+      document.getElementById("weeklyBox").querySelectorAll("button[data-d]").forEach(b=>{
+        b.onclick = ()=>{
+          const d = Number(b.getAttribute("data-d"));
+          state.weeklyMask = state.weeklyMask ^ (1<<d);
+          setWeeklyBtnStyles();
+        };
+      });
+    }
+
+    async function saveEvent(){
+      const title = state.form.title.trim();
+      const timeKind = state.form.timeKind;
+      const recurrence = state.form.recurrence;
 
       if(!title){ toast("Название обязательно"); return; }
 
       let startMin=null, endMin=null;
       if(timeKind !== "anytime"){
-        startMin = hmToMin(start);
-        endMin = hmToMin(end);
+        startMin = hmToMin(state.form.start);
+        endMin = hmToMin(state.form.end);
         if(startMin===null || endMin===null){ toast("Время HH:MM"); return; }
         if(startMin >= endMin){ toast("Начало < конца"); return; }
       }
 
       const body = {
         title,
-        color: state.createForm.color,
+        color: state.form.color,
         timeKind,
         startMin,
         endMin,
@@ -766,15 +907,15 @@
       };
 
       if(recurrence === "none"){
-        const sd = document.getElementById("fSingleDate").value.trim();
+        const sd = state.form.singleDate.trim();
         if(!/^\d{4}-\d{2}-\d{2}$/.test(sd)){ toast("Дата YYYY-MM-DD"); return; }
         body.singleDate = sd;
       } else if(recurrence === "weekly"){
         if(state.weeklyMask === 0){ toast("Выбери дни"); return; }
         body.weeklyMask = state.weeklyMask;
       } else if(recurrence === "cycle"){
-        const p = document.getElementById("fCyclePattern").value.trim();
-        const a = document.getElementById("fCycleAnchor").value.trim();
+        const p = state.form.cyclePattern.trim();
+        const a = state.form.cycleAnchor.trim();
         if(!/^[01]{2,31}$/.test(p)){ toast("Pattern 0/1 (2..31)"); return; }
         if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){ toast("Anchor YYYY-MM-DD"); return; }
         body.cyclePattern = p;
@@ -789,6 +930,33 @@
         toast("Событие добавлено");
         state.screen = "schedule";
         setActiveTab("schedule");
+        state.since = null;
+        await loadDay(true);
+      }catch(e){
+        toast("Ошибка: "+e.message);
+      }
+    }
+
+    // Notes by DATE (no time) — use API /api/daynote (мы добавим на backend ниже)
+    async function saveDayNote(){
+      const date = state.noteForm.date.trim();
+      const text = state.noteForm.text.trim();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ toast("Дата YYYY-MM-DD"); return; }
+      if(!text){ toast("Введите текст"); return; }
+
+      try{
+        const res = await apiFetch("/api/space/daynote", {
+          method:"POST",
+          body: JSON.stringify({ date, text })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "daynote_failed");
+        state.noteForm.text = "";
+        toast("Заметка добавлена");
+        state.date = date;           // сразу переключаемся на дату заметки
+        state.screen = "schedule";
+        setActiveTab("schedule");
+        state.since = null;
         await loadDay(true);
       }catch(e){
         toast("Ошибка: "+e.message);
@@ -828,57 +996,68 @@
         return;
       }
 
-      const paired = (state.me.paired === true);
-
-      if(!paired){
+      if(!realPaired()){
+        // pairing screen ALWAYS until otherUserId exists
         root.innerHTML = `
           <div class="card">
             <h2>Связь по PIN</h2>
-            <div class="muted">Сначала свяжите 2 аккаунта. После этого откроются разделы Schedule / Create / Profile.</div>
+            <div class="muted">
+              Сейчас связи нет (нужен второй участник). Создай PIN и отправь партнёру — или введи PIN от него.
+            </div>
+            <div class="divider"></div>
+            <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
+            <div style="height:8px;"></div>
+            <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId || "—"))}</span></div>
           </div>
 
           <div class="card">
             <h2>Создать PIN</h2>
-            <button class="btn-pink" id="btnCreate">Создать PIN на 10 минут</button>
+            <button class="btn-pink" id="btnCreatePin">Создать PIN на 10 минут</button>
             ${state.lastPin ? `
               <div class="pin">${escapeHtml(state.lastPin)}</div>
               <div class="row">
-                <button class="btn-ghost" id="btnCopy">Скопировать</button>
-                <button class="btn-ghost" id="btnRefreshMe">Я уже связал(а)</button>
+                <button class="btn-ghost" id="btnCopyPin">Скопировать</button>
+                <button class="btn-ghost" id="btnRecheck">Я уже связал(а)</button>
               </div>
-              <div class="muted">PIN одноразовый: после подключения второго — сгорит.</div>
             ` : ``}
           </div>
 
           <div class="card">
             <h2>Ввести PIN</h2>
             <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="6 цифр" />
-            <button class="btn-pink" id="btnJoin">Подключиться</button>
+            <button class="btn-pink" id="btnJoinPin">Подключиться</button>
           </div>
 
           ${errLine}
         `;
 
-        document.getElementById("btnCreate").onclick = createPair;
+        document.getElementById("tabs").classList.add("hidden");
+        stopPolling();
+
+        document.getElementById("btnCreatePin").onclick = createPair;
         if(state.lastPin){
-          document.getElementById("btnCopy").onclick = ()=>copyText(state.lastPin);
-          document.getElementById("btnRefreshMe").onclick = async ()=>{ await loadMe(); render(); };
+          document.getElementById("btnCopyPin").onclick = ()=>copyText(state.lastPin);
+          document.getElementById("btnRecheck").onclick = async ()=>{ await loadMe(); render(); };
         }
+
         const pinInput = document.getElementById("pinInput");
         pinInput.addEventListener("input", ()=>{ pinInput.value = pinInput.value.replace(/\D/g,"").slice(0,6); });
-        document.getElementById("btnJoin").onclick = ()=>{
+        document.getElementById("btnJoinPin").onclick = ()=>{
           const pin = pinInput.value.trim();
-          if(!/^\d{6}$/.test(pin)){ state.error="Введите 6 цифр"; render(); return; }
+          if(!/^\d{6}$/.test(pin)){ toast("Введите 6 цифр"); return; }
           joinPair(pin);
         };
+
         return;
       }
 
-      // Paired UI (tabs)
+      // paired UI
       document.getElementById("tabs").classList.remove("hidden");
 
       if(state.screen === "schedule"){
         setActiveTab("schedule");
+
+        const dayNotes = (state.dayData?.dayNotes || []).slice().reverse(); // newest first
 
         root.innerHTML = `
           <div class="card">
@@ -892,7 +1071,6 @@
               </div>
               <div style="text-align:right;">
                 <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
-                <div class="pill">poll: <span class="mono">${state.pollTimer ? "on" : "off"}</span></div>
               </div>
             </div>
 
@@ -916,145 +1094,159 @@
             <div id="colOther"></div>
           </div>
 
+          <div class="card notesBox">
+            <h2>Notes (by date)</h2>
+            <div class="muted" style="margin-bottom:10px;">Заметки привязаны только к дате (без времени).</div>
+            ${dayNotes.length ? dayNotes.map(n=>`
+              <div class="noteItem">
+                <div class="noteMeta">
+                  <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
+                  <span class="mono">${escapeHtml(String(n.authorTgUserId))}</span>
+                </div>
+                <div>${escapeHtml(n.text)}</div>
+              </div>
+            `).join("") : `<div class="muted">Пока нет заметок на эту дату.</div>`}
+          </div>
+
           ${errLine}
         `;
 
-        document.getElementById("btnPrev").onclick = async ()=>{ state.date = addDays(state.date,-1); state.since=null; await loadDay(true); };
-        document.getElementById("btnNext").onclick = async ()=>{ state.date = addDays(state.date,+1); state.since=null; await loadDay(true); };
-        document.getElementById("btnToday").onclick = async ()=>{ state.date = todayISO(); state.since=null; await loadDay(true); };
-        document.getElementById("btnTomorrow").onclick = async ()=>{ state.date = addDays(todayISO(), +1); state.since=null; await loadDay(true); };
-        document.getElementById("btnRefreshDay").onclick = ()=>loadDay(true);
-        document.getElementById("datePick").onchange = async (e)=>{ state.date = e.target.value; state.since=null; await loadDay(true); };
+        // stable date buttons (lock)
+        document.getElementById("btnPrev").onclick = ()=>safeDateNav(-1);
+        document.getElementById("btnNext").onclick = ()=>safeDateNav(+1);
+        document.getElementById("btnToday").onclick = ()=>safeSetDate(todayISO());
+        document.getElementById("btnTomorrow").onclick = ()=>safeSetDate(addDays(todayISO(), +1));
+        document.getElementById("btnRefreshDay").onclick = ()=>safeReloadDay();
+        document.getElementById("datePick").onchange = (e)=>safeSetDate(e.target.value);
 
         renderColumn("colMe", myId(), "You");
-        renderColumn("colOther", otherId(), state.me.otherUserId ? "Partner" : "Waiting…");
+        renderColumn("colOther", otherId(), "Partner");
+
         return;
       }
 
       if(state.screen === "create"){
         setActiveTab("create");
-        const d = state.date;
 
         root.innerHTML = `
           <div class="card">
-            <h2>Create Event</h2>
-            <div class="muted">Событие создаётся в твоём графике. Второй человек увидит его почти сразу (poll).</div>
+            <h2>Create</h2>
+            <div class="muted">Выбери, что создавать: событие или заметку на дату.</div>
           </div>
 
           <div class="card">
-            <div class="row" style="margin-bottom:10px;">
-              <input id="fTitle" placeholder="Название (например: Работа)" />
-              <select id="fTimeKind">
-                <option value="exact">Exact</option>
-                <option value="approx">Approx</option>
-                <option value="anytime">Anytime</option>
-              </select>
+            <div class="seg">
+              <button id="segEvent" class="${state.createMode==="event" ? "active" : ""}">Event</button>
+              <button id="segNote" class="${state.createMode==="note" ? "active" : ""}">Note</button>
             </div>
 
-            <div class="row" style="margin-bottom:10px;">
-              <input id="fStart" placeholder="Начало (HH:MM)" />
-              <input id="fEnd" placeholder="Конец (HH:MM)" />
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="row" style="margin-bottom:10px;">
-              <select id="fRecurrence">
-                <option value="none">Single date</option>
-                <option value="weekly">Weekly</option>
-                <option value="cycle">Cycle (2/2)</option>
-              </select>
-              <input id="fSingleDate" placeholder="Дата (YYYY-MM-DD)" />
-            </div>
-
-            <div id="weeklyBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
-              <div class="muted" style="margin-bottom:8px;">Дни недели:</div>
-              <div class="row">
-                <button class="btn-ghost" data-d="0">Пн</button>
-                <button class="btn-ghost" data-d="1">Вт</button>
-                <button class="btn-ghost" data-d="2">Ср</button>
-                <button class="btn-ghost" data-d="3">Чт</button>
-                <button class="btn-ghost" data-d="4">Пт</button>
-                <button class="btn-ghost" data-d="5">Сб</button>
-                <button class="btn-ghost" data-d="6">Вс</button>
-              </div>
-            </div>
-
-            <div id="cycleBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
-              <div class="muted" style="margin-bottom:8px;">Cycle pattern:</div>
+            <div id="createEvent" class="${state.createMode==="event" ? "" : "hidden"}">
               <div class="row" style="margin-bottom:10px;">
-                <input id="fCyclePattern" placeholder="Pattern (например 1100)" />
-                <input id="fCycleAnchor" placeholder="Anchor date (YYYY-MM-DD)" />
+                <input id="fTitle" placeholder="Название (например: Работа)" />
+                <select id="fTimeKind">
+                  <option value="exact">Exact</option>
+                  <option value="approx">Approx</option>
+                  <option value="anytime">Anytime</option>
+                </select>
               </div>
-              <div class="muted">“1100” = работа 2 дня, выходной 2 дня.</div>
+
+              <div class="row" style="margin-bottom:10px;">
+                <input id="fStart" placeholder="Начало (HH:MM)" />
+                <input id="fEnd" placeholder="Конец (HH:MM)" />
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="row" style="margin-bottom:10px;">
+                <select id="fRecurrence">
+                  <option value="none">Single date</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="cycle">Cycle (2/2)</option>
+                </select>
+                <input id="fSingleDate" placeholder="Дата (YYYY-MM-DD)" />
+              </div>
+
+              <div id="weeklyBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
+                <div class="muted" style="margin-bottom:8px;">Дни недели:</div>
+                <div class="row">
+                  <button class="btn-ghost" data-d="0">Пн</button>
+                  <button class="btn-ghost" data-d="1">Вт</button>
+                  <button class="btn-ghost" data-d="2">Ср</button>
+                  <button class="btn-ghost" data-d="3">Чт</button>
+                  <button class="btn-ghost" data-d="4">Пт</button>
+                  <button class="btn-ghost" data-d="5">Сб</button>
+                  <button class="btn-ghost" data-d="6">Вс</button>
+                </div>
+              </div>
+
+              <div id="cycleBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
+                <div class="muted" style="margin-bottom:8px;">Cycle pattern:</div>
+                <div class="row" style="margin-bottom:10px;">
+                  <input id="fCyclePattern" placeholder="Pattern (например 1100)" />
+                  <input id="fCycleAnchor" placeholder="Anchor date (YYYY-MM-DD)" />
+                </div>
+                <div class="muted">“1100” = работа 2 дня, выходной 2 дня.</div>
+              </div>
+
+              <div class="muted" style="margin:10px 0 8px 0;">Цвет:</div>
+              <div class="colors" id="colorRow"></div>
+
+              <div class="divider"></div>
+              <button class="btn-pink" id="btnSaveEvent">Сохранить событие</button>
             </div>
 
-            <div class="muted" style="margin:10px 0 8px 0;">Цвет:</div>
-            <div class="colors" id="colorRow"></div>
-
-            <div class="divider"></div>
-
-            <button class="btn-pink" id="btnSave">Сохранить</button>
+            <div id="createNote" class="${state.createMode==="note" ? "" : "hidden"}">
+              <div class="muted" style="margin-bottom:8px;">Заметка по дате (без времени):</div>
+              <div class="row" style="margin-bottom:10px;">
+                <input id="nDate" type="date" value="${escapeHtml(state.noteForm.date)}" />
+              </div>
+              <textarea id="nText" placeholder="Например: сегодня тренировка отменяется / важная встреча / дедлайн"></textarea>
+              <div class="divider"></div>
+              <button class="btn-pink" id="btnSaveNote">Сохранить заметку</button>
+            </div>
           </div>
 
           ${errLine}
         `;
 
-        // defaults
-        document.getElementById("fTitle").value = "";
-        document.getElementById("fTimeKind").value = "exact";
-        document.getElementById("fStart").value = "09:00";
-        document.getElementById("fEnd").value = "18:00";
-        document.getElementById("fRecurrence").value = "none";
-        document.getElementById("fSingleDate").value = d;
-        document.getElementById("fCyclePattern").value = "1100";
-        document.getElementById("fCycleAnchor").value = d;
+        // segment
+        document.getElementById("segEvent").onclick = ()=>{ state.createMode="event"; render(); };
+        document.getElementById("segNote").onclick = ()=>{ state.createMode="note"; render(); };
 
-        state.weeklyMask = 0;
-        state.createForm.color = "c1";
-        buildColorRow();
-        syncRecurrenceUI();
-        setWeeklyBtnStyles();
+        if(state.createMode === "event"){
+          bindCreateInputs();
+          document.getElementById("btnSaveEvent").onclick = saveEvent;
+        } else {
+          const nDate = document.getElementById("nDate");
+          const nText = document.getElementById("nText");
+          nText.value = state.noteForm.text;
+          nDate.onchange = (e)=> state.noteForm.date = e.target.value;
+          nText.oninput = (e)=> state.noteForm.text = e.target.value;
+          document.getElementById("btnSaveNote").onclick = saveDayNote;
+        }
 
-        document.getElementById("fRecurrence").addEventListener("change", syncRecurrenceUI);
-        document.getElementById("weeklyBox").querySelectorAll("button[data-d]").forEach(b=>{
-          b.addEventListener("click", ()=>{
-            const day = Number(b.getAttribute("data-d"));
-            state.weeklyMask = state.weeklyMask ^ (1<<day);
-            setWeeklyBtnStyles();
-          });
-        });
-
-        document.getElementById("btnSave").onclick = saveEventFromCreate;
         return;
       }
 
       if(state.screen === "profile"){
         setActiveTab("profile");
 
-        const members = state.dayData?.members || [];
         root.innerHTML = `
           <div class="card">
             <h2>Profile</h2>
-            <div class="muted">Информация о связи и аккаунтах.</div>
+            <div class="muted">Связь активна, пока есть partner userId.</div>
             <div class="divider"></div>
             <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
             <div style="height:8px;"></div>
-            <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId || "—"))}</span></div>
+            <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
             <div class="divider"></div>
-            <button class="btn-ghost" id="btnProfileRefresh">Обновить /api/me</button>
-          </div>
-
-          <div class="card">
-            <h2>Members</h2>
-            <div class="muted">${members.length ? members.map(m=>`<span class="pill mono">${escapeHtml(m.tgUserId)}</span>`).join(" ") : "—"}</div>
+            <button class="btn-ghost" id="btnProfileRefresh">Обновить</button>
           </div>
 
           ${errLine}
         `;
-
         document.getElementById("btnProfileRefresh").onclick = async ()=>{
           await loadMe();
           await loadDay(true);
@@ -1064,8 +1256,41 @@
       }
     }
 
+    async function safeDateNav(delta){
+      if(state.actionLock) return;
+      state.actionLock = true;
+      try{
+        state.date = addDays(state.date, delta);
+        state.since = null;
+        await loadDay(true);
+      } finally {
+        state.actionLock = false;
+      }
+    }
+    async function safeSetDate(date){
+      if(state.actionLock) return;
+      if(!date) return;
+      state.actionLock = true;
+      try{
+        state.date = date;
+        state.since = null;
+        await loadDay(true);
+      } finally {
+        state.actionLock = false;
+      }
+    }
+    async function safeReloadDay(){
+      if(state.actionLock) return;
+      state.actionLock = true;
+      try{
+        state.since = null;
+        await loadDay(true);
+      } finally {
+        state.actionLock = false;
+      }
+    }
+
     function wireGlobal(){
-      // tabs
       document.getElementById("tabSchedule").onclick = async ()=>{
         state.screen = "schedule";
         render();
@@ -1080,12 +1305,11 @@
         render();
       };
 
-      // note modal controls
-      document.getElementById("noteClose").onclick = closeNoteModal;
-      document.getElementById("btnAddNote").onclick = ()=>{
-        document.getElementById("addNoteBox").classList.toggle("hidden");
+      document.getElementById("eventClose").onclick = closeEventModal;
+      document.getElementById("btnAddEventNote").onclick = ()=>{
+        document.getElementById("addEventNoteBox").classList.toggle("hidden");
       };
-      document.getElementById("btnSendNote").onclick = sendNote;
+      document.getElementById("btnSendEventNote").onclick = sendEventNote;
       document.getElementById("btnDeleteSeries").onclick = deleteSeries;
     }
 
@@ -1099,20 +1323,17 @@
     }
 
     async function init(){
-      state.error=null;
+      state.error = null;
       if(tg) tg.ready();
       wireGlobal();
       await loadMe();
-
-      if(state.me?.paired === true){
+      if(realPaired()){
         await loadDay(true);
         startPolling();
       }
-
       render();
     }
 
-    // Start
     init();
   </script>
 </body>

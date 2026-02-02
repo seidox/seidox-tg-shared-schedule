@@ -8,74 +8,496 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      padding: 16px;
-      background: #f6f6f7;
-      color: #111;
+    :root{
+      --bg: #0b0b10;
+      --card: #12121a;
+      --card2:#161622;
+      --text: #f4f4ff;
+      --muted:#a7a7c2;
+      --border:#242436;
+      --pink:#ff2d86;
+      --pink2:#ff66b0;
+      --good:#19c37d;
+      --bad:#ff4d4d;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+
+      --c1:#ff2d86;
+      --c2:#a855f7;
+      --c3:#22c55e;
+      --c4:#38bdf8;
+      --c5:#f97316;
+      --c6:#facc15;
     }
-    .card {
-      background: #fff;
-      border-radius: 14px;
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      padding:16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(1200px 800px at 40% -10%, rgba(255,45,134,.25), transparent 60%),
+                  radial-gradient(900px 600px at 110% 10%, rgba(168,85,247,.20), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .brand{
+      font-weight:800;
+      letter-spacing:.3px;
+      font-size:16px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .badge{
+      font-size:12px;
+      padding:4px 8px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid var(--border);
+      border-radius: 16px;
       padding: 14px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      box-shadow: var(--shadow);
       margin-bottom: 12px;
     }
-    h2 { margin: 0 0 10px 0; font-size: 18px; }
-    .muted { color: #666; font-size: 13px; }
-    input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #ddd;
-      font-size: 16px;
-      outline: none;
-      box-sizing: border-box;
+    .card h2{
+      margin:0 0 10px 0;
+      font-size:16px;
+      letter-spacing:.2px;
     }
-    button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 0;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 10px;
+    .muted{ color: var(--muted); font-size:13px; line-height:1.35; }
+    .row{ display:flex; gap:10px; align-items:center; }
+    .row > *{ flex:1; }
+
+    input, select, textarea{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      outline:none;
+      font-size:15px;
     }
-    .btn-primary { background: #2a7cff; color: #fff; }
-    .btn-secondary { background: #eee; color: #111; }
-    .row { display: flex; gap: 10px; }
-    .row > * { flex: 1; }
-    .pin {
-      font-size: 28px;
-      letter-spacing: 4px;
-      font-weight: 700;
-      text-align: center;
-      padding: 10px 0;
+    textarea{ min-height:90px; resize: vertical; }
+
+    button{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid transparent;
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      font-weight:650;
+      cursor:pointer;
+      transition:.15s ease;
     }
-    pre {
-      background: #111;
-      color: #0f0;
-      padding: 10px;
-      border-radius: 12px;
-      overflow: auto;
-      font-size: 12px;
+    button:active{ transform: translateY(1px); }
+
+    .btn-pink{
+      background: linear-gradient(180deg, rgba(255,45,134,.95), rgba(255,45,134,.75));
+      border-color: rgba(255,45,134,.35);
+      box-shadow: 0 10px 24px rgba(255,45,134,.18);
     }
-    .hidden { display: none; }
-    .ok { color: #1a7f37; font-weight: 600; }
-    .err { color: #b42318; font-weight: 600; }
+    .btn-ghost{
+      background: rgba(255,255,255,.04);
+      border-color: var(--border);
+      color: var(--muted);
+    }
+    .btn-danger{
+      background: rgba(255,77,77,.14);
+      border-color: rgba(255,77,77,.25);
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size:12px;
+    }
+    .dot{
+      width:9px; height:9px; border-radius:999px;
+      background: var(--pink);
+      box-shadow: 0 0 0 4px rgba(255,45,134,.15);
+    }
+
+    .pin{
+      font-size:30px;
+      letter-spacing:6px;
+      font-weight:900;
+      text-align:center;
+      padding:10px 0;
+      color: var(--pink2);
+      text-shadow: 0 0 18px rgba(255,102,176,.25);
+    }
+
+    .ok{ color: var(--good); font-weight:700; }
+    .err{ color: var(--bad); font-weight:700; }
+
+    .divider{
+      height:1px;
+      background: rgba(255,255,255,.06);
+      margin:12px 0;
+    }
+
+    /* timeline */
+    .timelines{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .timeline-card{
+      background: rgba(255,255,255,.03);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+    }
+    .timeline-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .who{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .who small{
+      display:block;
+      font-weight:600;
+      color: var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+    .who .avatar{
+      width:34px;
+      height:34px;
+      border-radius:12px;
+      background: rgba(255,45,134,.14);
+      border:1px solid rgba(255,45,134,.28);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      color: var(--pink2);
+    }
+
+    .timeline{
+      position:relative;
+      height:120px;
+      border-radius:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.06);
+      overflow:hidden;
+    }
+    .gridline{
+      position:absolute;
+      top:0; bottom:0;
+      width:1px;
+      background: rgba(255,255,255,.06);
+    }
+    .gridlabel{
+      position:absolute;
+      top:8px;
+      transform: translateX(-50%);
+      font-size:11px;
+      color: rgba(244,244,255,.40);
+      white-space:nowrap;
+    }
+
+    .event{
+      position:absolute;
+      top:44px;
+      height:44px;
+      border-radius:14px;
+      padding:8px 10px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: 0 8px 20px rgba(0,0,0,.25);
+      cursor:pointer;
+    }
+    .event .t{
+      font-weight:850;
+      font-size:12px;
+      line-height:1.1;
+      margin-bottom:3px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:100%;
+    }
+    .event .s{
+      font-size:11px;
+      color: rgba(244,244,255,.70);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .event.any{
+      top:18px;
+      height:84px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .event.approx{
+      border-style:dashed;
+    }
+
+    .legend{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .legend .pill{ padding:5px 9px; }
+
+    .footer-actions{
+      display:flex;
+      gap:10px;
+    }
+    .footer-actions button{ width:auto; flex:1; }
+
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding:12px;
+      z-index:1000;
+    }
+    .modal{
+      width:100%;
+      max-width:560px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius:20px;
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .modal-head h3{
+      margin:0;
+      font-size:15px;
+      font-weight:900;
+    }
+    .closeX{
+      width:40px;
+      height:40px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size:18px;
+      cursor:pointer;
+    }
+
+    .colors{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .colorbtn{
+      width:42px;
+      height:42px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      cursor:pointer;
+      position:relative;
+    }
+    .colorbtn.sel::after{
+      content:"";
+      position:absolute;
+      inset:10px;
+      border-radius:10px;
+      border:2px solid rgba(255,255,255,.85);
+    }
+
+    .small{ font-size:12px; color: var(--muted); }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    pre{
+      background:#0a0a0f;
+      border:1px solid rgba(255,255,255,.08);
+      color:#b9ffcc;
+      padding:10px;
+      border-radius:14px;
+      overflow:auto;
+      font-size:12px;
+      margin:0;
+    }
+
+    .hidden{ display:none; }
   </style>
 </head>
+
 <body>
+  <div class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      Shared Schedule
+      <span class="badge">private ×2</span>
+    </div>
+    <div class="pill" id="statusPill"><span class="mono">…</span></div>
+  </div>
+
   <div id="app"></div>
+
+  <!-- Modal: add/edit event -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="modalTitle">Событие</h3>
+        <button class="closeX" id="modalClose">✕</button>
+      </div>
+
+      <div class="card" style="margin:0; box-shadow:none;">
+        <div class="muted" style="margin-bottom:10px;">Создай/измени событие. “Anytime” — без времени, “Approx” — примерное время.</div>
+
+        <div class="row" style="margin-bottom:10px;">
+          <input id="fTitle" placeholder="Название (например: Работа)" />
+          <select id="fTimeKind">
+            <option value="exact">Exact</option>
+            <option value="approx">Approx</option>
+            <option value="anytime">Anytime</option>
+          </select>
+        </div>
+
+        <div class="row" style="margin-bottom:10px;">
+          <input id="fStart" placeholder="Начало (HH:MM)" />
+          <input id="fEnd" placeholder="Конец (HH:MM)" />
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row" style="margin-bottom:10px;">
+          <select id="fRecurrence">
+            <option value="none">Single date</option>
+            <option value="weekly">Weekly</option>
+            <option value="cycle">Cycle (например 2/2)</option>
+          </select>
+          <input id="fSingleDate" placeholder="Дата (YYYY-MM-DD)" />
+        </div>
+
+        <div id="weeklyBox" class="card" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
+          <div class="muted" style="margin-bottom:8px;">Выбери дни недели:</div>
+          <div class="row">
+            <button class="btn-ghost" data-d="0">Пн</button>
+            <button class="btn-ghost" data-d="1">Вт</button>
+            <button class="btn-ghost" data-d="2">Ср</button>
+            <button class="btn-ghost" data-d="3">Чт</button>
+            <button class="btn-ghost" data-d="4">Пт</button>
+            <button class="btn-ghost" data-d="5">Сб</button>
+            <button class="btn-ghost" data-d="6">Вс</button>
+          </div>
+          <div class="small" style="margin-top:8px;">Маска хранится битами (Пн=0..Вс=6).</div>
+        </div>
+
+        <div id="cycleBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
+          <div class="muted" style="margin-bottom:8px;">Cycle pattern:</div>
+          <div class="row" style="margin-bottom:10px;">
+            <input id="fCyclePattern" placeholder="Pattern (например 1100 для 2/2)" />
+            <input id="fCycleAnchor" placeholder="Anchor date (YYYY-MM-DD)" />
+          </div>
+          <div class="small">“1100” = работа 2 дня, выходной 2 дня. Anchor — от какой даты считать.</div>
+        </div>
+
+        <div class="muted" style="margin:10px 0 8px 0;">Цвет:</div>
+        <div class="colors" id="colorRow"></div>
+
+        <div class="divider"></div>
+
+        <button class="btn-pink" id="btnSave">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: event details + note -->
+  <div class="modal-backdrop" id="noteBackdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="noteTitle">Событие</h3>
+        <button class="closeX" id="noteClose">✕</button>
+      </div>
+
+      <div class="card" style="margin:0; box-shadow:none;">
+        <div id="noteMeta" class="muted" style="margin-bottom:10px;"></div>
+
+        <div class="row" style="margin-bottom:10px;">
+          <button class="btn-ghost" id="btnAddNote">Добавить заметку</button>
+          <button class="btn-danger" id="btnDeleteSeries">Удалить событие</button>
+        </div>
+
+        <div id="addNoteBox" class="hidden">
+          <textarea id="noteText" placeholder="Заметка (видна обоим)"></textarea>
+          <button class="btn-pink" id="btnSendNote">Отправить заметку</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="muted" style="margin-bottom:8px;">Заметки на дату:</div>
+        <div id="notesList" class="small"></div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const tg = window.Telegram?.WebApp;
+
+    const COLORS = [
+      { id:"c1", hex:getCss("--c1") },
+      { id:"c2", hex:getCss("--c2") },
+      { id:"c3", hex:getCss("--c3") },
+      { id:"c4", hex:getCss("--c4") },
+      { id:"c5", hex:getCss("--c5") },
+      { id:"c6", hex:getCss("--c6") },
+    ];
 
     const state = {
       me: null,
       lastPin: null,
       error: null,
       loading: false,
+
+      date: todayISO(),
+      dayData: null,
+      pollTimer: null,
+      since: null,
+
+      weeklyMask: 0, // Mon=bit0..Sun=bit6
+
+      modalOpen: false,
+      editing: { color:"c1" },
+
+      selectedEvent: null, // resolved day event
     };
 
     function apiFetch(path, options = {}) {
@@ -87,173 +509,653 @@
       return fetch(path, Object.assign({}, options, { headers }));
     }
 
+    function setPill(text){
+      const el = document.getElementById("statusPill");
+      el.innerHTML = `<span class="mono">${escapeHtml(text)}</span>`;
+    }
+
     async function loadMe() {
-      state.loading = true;
-      state.error = null;
-      render();
       try {
         const res = await apiFetch("/api/me");
         const data = await res.json();
         state.me = data;
+        setPill(data?.paired ? "paired" : "not paired");
       } catch (e) {
         state.error = e.message;
-      } finally {
-        state.loading = false;
-        render();
+        setPill("error");
       }
     }
 
     async function createPair() {
-      state.loading = true;
-      state.error = null;
-      state.lastPin = null;
+      state.loading = true; state.error = null; state.lastPin = null;
       render();
       try {
-        const res = await apiFetch("/api/space/create", { method: "POST", body: "{}" });
+        const res = await apiFetch("/api/space/create", { method:"POST", body:"{}" });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "create_failed");
         state.lastPin = data.pin;
-      } catch (e) {
-        state.error = e.message;
-      } finally {
-        state.loading = false;
-        render();
-      }
+      } catch(e){ state.error = e.message; }
+      state.loading = false;
+      render();
     }
 
-    async function joinPair(pin) {
-      state.loading = true;
-      state.error = null;
+    async function joinPair(pin){
+      state.loading = true; state.error = null;
       render();
       try {
         const res = await apiFetch("/api/space/join", {
-          method: "POST",
+          method:"POST",
           body: JSON.stringify({ pin })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "join_failed");
-        await loadMe(); // обновляем статус paired
-      } catch (e) {
+        await loadMe();
+        await loadDay(true);
+      } catch(e){
         state.error = e.message;
-        state.loading = false;
-        render();
+      }
+      state.loading = false;
+      render();
+    }
+
+    function todayISO(){
+      const d = new Date();
+      return d.toISOString().slice(0,10);
+    }
+
+    function fmtDow(dateISO){
+      const d = new Date(dateISO + "T00:00:00");
+      const days = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+      return days[d.getDay()];
+    }
+
+    function addDays(dateISO, delta){
+      const d = new Date(dateISO + "T00:00:00");
+      d.setDate(d.getDate() + delta);
+      return d.toISOString().slice(0,10);
+    }
+
+    function hmToMin(hm){
+      const m = /^(\d{1,2}):(\d{2})$/.exec(String(hm||"").trim());
+      if(!m) return null;
+      const h = Number(m[1]), mi = Number(m[2]);
+      if(h<0||h>23||mi<0||mi>59) return null;
+      return h*60+mi;
+    }
+
+    function minToHm(min){
+      if(min===null || min===undefined) return "—";
+      const h = Math.floor(min/60);
+      const m = min%60;
+      return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+    }
+
+    function colorHex(id){
+      return (COLORS.find(c=>c.id===id)?.hex) || getCss("--pink");
+    }
+
+    function getCss(varName){
+      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    }
+
+    function openModal(){
+      state.modalOpen = true;
+      document.getElementById("modalBackdrop").style.display = "flex";
+      tg?.HapticFeedback?.impactOccurred?.("light");
+    }
+    function closeModal(){
+      state.modalOpen = false;
+      document.getElementById("modalBackdrop").style.display = "none";
+    }
+
+    function openNoteModal(){
+      document.getElementById("noteBackdrop").style.display = "flex";
+      tg?.HapticFeedback?.impactOccurred?.("light");
+    }
+    function closeNoteModal(){
+      document.getElementById("noteBackdrop").style.display = "none";
+      document.getElementById("addNoteBox").classList.add("hidden");
+      document.getElementById("noteText").value = "";
+      state.selectedEvent = null;
+    }
+
+    function copyText(text){
+      if(!text) return;
+      navigator.clipboard?.writeText(text);
+      tg?.showPopup?.({ title:"Скопировано", message:text });
+    }
+
+    async function loadDay(resetSince=false){
+      if(!state.me?.paired) return;
+      try{
+        const qs = new URLSearchParams({ date: state.date });
+        if(!resetSince && state.since) qs.set("since", state.since);
+        const res = await apiFetch("/api/day?"+qs.toString());
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "day_failed");
+
+        // merge incremental
+        if(!state.dayData || resetSince){
+          state.dayData = data;
+        } else {
+          // update serverTime
+          state.dayData.serverTime = data.serverTime;
+          // merge events by eventKey
+          const map = new Map((state.dayData.events||[]).map(e=>[e.eventKey,e]));
+          for(const e of (data.events||[])) map.set(e.eventKey, e);
+          state.dayData.events = Array.from(map.values());
+          // append notes
+          state.dayData.notes = (state.dayData.notes||[]).concat(data.notes||[]);
+          state.dayData.members = data.members || state.dayData.members;
+        }
+
+        state.since = data.serverTime;
+      } catch(e){
+        state.error = e.message;
+      }
+      render();
+    }
+
+    function startPolling(){
+      stopPolling();
+      state.pollTimer = setInterval(()=> loadDay(false), 4000);
+    }
+    function stopPolling(){
+      if(state.pollTimer) clearInterval(state.pollTimer);
+      state.pollTimer = null;
+    }
+
+    function myId(){ return state.me?.tgUserId; }
+    function otherId(){ return state.me?.otherUserId; }
+
+    function eventsFor(userId){
+      const all = state.dayData?.events || [];
+      return all.filter(e => String(e.ownerTgUserId) === String(userId));
+    }
+
+    function makeTimeLabel(e){
+      if(e.timeKind === "anytime") return "Anytime";
+      const a = minToHm(e.startMin);
+      const b = minToHm(e.endMin);
+      return (e.timeKind === "approx" ? "~ " : "") + a + "–" + b;
+    }
+
+    function renderTimeline(containerId, userId, label){
+      const el = document.getElementById(containerId);
+      const evs = eventsFor(userId);
+
+      // grid lines at 0, 6, 12, 18, 24
+      const grid = [0, 360, 720, 1080, 1440];
+
+      let html = `
+        <div class="timeline-card">
+          <div class="timeline-head">
+            <div class="who">
+              <div class="avatar">${escapeHtml(label.slice(0,1).toUpperCase())}</div>
+              <div>
+                ${escapeHtml(label)}
+                <small class="mono">${escapeHtml(String(userId||"—"))}</small>
+              </div>
+            </div>
+            <span class="pill">${escapeHtml(evs.length)} events</span>
+          </div>
+
+          <div class="timeline" id="${containerId}_bar">
+      `;
+
+      for(const g of grid){
+        const left = (g/1440)*100;
+        const text = (g===1440) ? "24:00" : minToHm(g);
+        html += `
+          <div class="gridline" style="left:${left}%"></div>
+          <div class="gridlabel" style="left:${left}%">${escapeHtml(text)}</div>
+        `;
+      }
+
+      // render events
+      for(const e of evs){
+        let left = 0, width = 100;
+        let cls = "event";
+        if(e.timeKind === "anytime"){
+          cls += " any";
+          left = 2; width = 96;
+        } else {
+          const s = (e.startMin ?? 0);
+          const en = (e.endMin ?? (s+60));
+          left = (s/1440)*100;
+          width = ((en - s)/1440)*100;
+          left = Math.max(0, Math.min(100, left));
+          width = Math.max(2, Math.min(100-left, width));
+        }
+        if(e.timeKind === "approx") cls += " approx";
+
+        const col = colorHex(e.color);
+        html += `
+          <div class="${cls}" data-series="${e.seriesId}" data-key="${escapeHtml(e.eventKey)}"
+               style="left:${left}%; width:${width}%;
+                      background: linear-gradient(180deg, ${col}cc, ${col}88);">
+            <div class="t">${escapeHtml(e.title)}</div>
+            <div class="s">${escapeHtml(makeTimeLabel(e))}</div>
+          </div>
+        `;
+      }
+
+      html += `
+          </div>
+
+          <div class="legend">
+            <span class="pill"><span class="dot" style="background:var(--pink)"></span> Exact</span>
+            <span class="pill"><span class="dot" style="background:var(--pink2)"></span> Approx (dashed)</span>
+            <span class="pill"><span class="dot" style="background:#666"></span> Anytime</span>
+          </div>
+        </div>
+      `;
+
+      el.innerHTML = html;
+
+      // attach click handlers
+      const bar = document.getElementById(containerId+"_bar");
+      bar.querySelectorAll(".event").forEach(node=>{
+        node.addEventListener("click", ()=>{
+          const key = node.getAttribute("data-key");
+          const ev = (state.dayData?.events||[]).find(x=>x.eventKey===key);
+          if(ev) openEventDetails(ev);
+        });
+      });
+    }
+
+    function openEventDetails(ev){
+      state.selectedEvent = ev;
+
+      document.getElementById("noteTitle").textContent = ev.title;
+      document.getElementById("noteMeta").innerHTML = `
+        <div class="pill">Дата: <span class="mono">${escapeHtml(state.date)}</span></div>
+        <div class="pill">Время: <span class="mono">${escapeHtml(makeTimeLabel(ev))}</span></div>
+        <div class="pill">Owner: <span class="mono">${escapeHtml(String(ev.ownerTgUserId))}</span></div>
+        <div class="pill">SeriesId: <span class="mono">${escapeHtml(String(ev.seriesId))}</span></div>
+      `;
+
+      // list notes for this date & series
+      const notes = (state.dayData?.notes||[]).filter(n=>Number(n.seriesId)===Number(ev.seriesId));
+      const list = notes.map(n=>{
+        const who = String(n.authorTgUserId)===String(myId()) ? "you" : "other";
+        return `<div class="pill" style="margin:6px 0;">
+          <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
+          <b>${escapeHtml(who)}</b>:
+          ${escapeHtml(n.text)}
+        </div>`;
+      }).join("");
+
+      document.getElementById("notesList").innerHTML = list || `<div class="muted">Пока нет заметок.</div>`;
+
+      // delete only if mine
+      const delBtn = document.getElementById("btnDeleteSeries");
+      if(String(ev.ownerTgUserId) !== String(myId())){
+        delBtn.disabled = true;
+        delBtn.classList.add("btn-ghost");
+        delBtn.classList.remove("btn-danger");
+        delBtn.textContent = "Удалить (только владелец)";
+      } else {
+        delBtn.disabled = false;
+        delBtn.classList.add("btn-danger");
+        delBtn.classList.remove("btn-ghost");
+        delBtn.textContent = "Удалить событие";
+      }
+
+      openNoteModal();
+    }
+
+    async function sendNote(){
+      const ev = state.selectedEvent;
+      if(!ev) return;
+      const text = document.getElementById("noteText").value.trim();
+      if(!text){ toast("Введите текст заметки"); return; }
+
+      try{
+        const res = await apiFetch("/api/note", {
+          method:"POST",
+          body: JSON.stringify({ seriesId: ev.seriesId, date: state.date, text })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "note_failed");
+        document.getElementById("noteText").value = "";
+        document.getElementById("addNoteBox").classList.add("hidden");
+        await loadDay(true);
+        openEventDetails((state.dayData.events||[]).find(x=>x.seriesId===ev.seriesId && x.eventKey===ev.eventKey) || ev);
+        toast("Заметка добавлена");
+      }catch(e){
+        toast("Ошибка: "+e.message);
       }
     }
 
-    function copyText(text) {
-      if (!text) return;
-      navigator.clipboard?.writeText(text);
-      tg?.showPopup?.({ title: "Скопировано", message: text });
+    async function deleteSeries(){
+      const ev = state.selectedEvent;
+      if(!ev) return;
+      if(String(ev.ownerTgUserId) !== String(myId())) return;
+
+      try{
+        const res = await apiFetch("/api/series/"+ev.seriesId, { method:"DELETE" });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "delete_failed");
+        closeNoteModal();
+        await loadDay(true);
+        toast("Удалено");
+      }catch(e){
+        toast("Ошибка: "+e.message);
+      }
     }
 
-    function render() {
+    function toast(msg){
+      state.error = msg;
+      render();
+      setTimeout(()=>{ state.error=null; render(); }, 2200);
+    }
+
+    function buildColorRow(){
+      const row = document.getElementById("colorRow");
+      row.innerHTML = COLORS.map(c=>{
+        const sel = state.editing.color === c.id ? "sel" : "";
+        return `<div class="colorbtn ${sel}" data-c="${c.id}" style="background:${c.hex};"></div>`;
+      }).join("");
+      row.querySelectorAll(".colorbtn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          state.editing.color = btn.getAttribute("data-c");
+          buildColorRow();
+        });
+      });
+    }
+
+    function setWeeklyBtnStyles(){
+      const box = document.getElementById("weeklyBox");
+      box.querySelectorAll("button[data-d]").forEach(b=>{
+        const d = Number(b.getAttribute("data-d"));
+        const on = (state.weeklyMask & (1<<d)) !== 0;
+        b.style.borderColor = on ? "rgba(255,45,134,.55)" : "var(--border)";
+        b.style.color = on ? "var(--text)" : "var(--muted)";
+        b.style.background = on ? "rgba(255,45,134,.22)" : "rgba(255,255,255,.04)";
+      });
+    }
+
+    function openAddEvent(){
+      // defaults
+      state.weeklyMask = 0;
+      state.editing = {
+        title: "",
+        color: "c1",
+        timeKind: "exact",
+        start: "09:00",
+        end: "18:00",
+        recurrence: "none",
+        singleDate: state.date,
+        cyclePattern: "1100",
+        cycleAnchor: state.date
+      };
+
+      document.getElementById("modalTitle").textContent = "Добавить событие";
+      document.getElementById("fTitle").value = state.editing.title;
+      document.getElementById("fTimeKind").value = state.editing.timeKind;
+      document.getElementById("fStart").value = state.editing.start;
+      document.getElementById("fEnd").value = state.editing.end;
+      document.getElementById("fRecurrence").value = state.editing.recurrence;
+      document.getElementById("fSingleDate").value = state.editing.singleDate;
+      document.getElementById("fCyclePattern").value = state.editing.cyclePattern;
+      document.getElementById("fCycleAnchor").value = state.editing.cycleAnchor;
+
+      buildColorRow();
+      syncRecurrenceUI();
+      setWeeklyBtnStyles();
+      openModal();
+    }
+
+    function syncRecurrenceUI(){
+      const r = document.getElementById("fRecurrence").value;
+      const single = document.getElementById("fSingleDate");
+      const weekly = document.getElementById("weeklyBox");
+      const cycle = document.getElementById("cycleBox");
+
+      if(r === "none"){
+        single.disabled = false;
+        weekly.classList.add("hidden");
+        cycle.classList.add("hidden");
+      } else if(r === "weekly"){
+        single.disabled = true;
+        weekly.classList.remove("hidden");
+        cycle.classList.add("hidden");
+      } else if(r === "cycle"){
+        single.disabled = true;
+        weekly.classList.add("hidden");
+        cycle.classList.remove("hidden");
+      }
+    }
+
+    async function saveEvent(){
+      const title = document.getElementById("fTitle").value.trim();
+      const timeKind = document.getElementById("fTimeKind").value;
+      const start = document.getElementById("fStart").value.trim();
+      const end = document.getElementById("fEnd").value.trim();
+      const recurrence = document.getElementById("fRecurrence").value;
+
+      if(!title){ toast("Название обязательно"); return; }
+
+      let startMin=null, endMin=null;
+      if(timeKind !== "anytime"){
+        startMin = hmToMin(start);
+        endMin = hmToMin(end);
+        if(startMin===null || endMin===null){ toast("Время должно быть HH:MM"); return; }
+        if(startMin >= endMin){ toast("Начало должно быть меньше конца"); return; }
+      }
+
+      const body = {
+        title,
+        color: state.editing.color,
+        timeKind,
+        startMin,
+        endMin,
+        recurrenceKind: recurrence,
+        singleDate: null,
+        weeklyMask: null,
+        cyclePattern: null,
+        cycleAnchorDate: null
+      };
+
+      if(recurrence === "none"){
+        const sd = document.getElementById("fSingleDate").value.trim();
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(sd)){ toast("Дата: YYYY-MM-DD"); return; }
+        body.singleDate = sd;
+      } else if(recurrence === "weekly"){
+        if(state.weeklyMask === 0){ toast("Выбери хотя бы 1 день"); return; }
+        body.weeklyMask = state.weeklyMask;
+      } else if(recurrence === "cycle"){
+        const p = document.getElementById("fCyclePattern").value.trim();
+        const a = document.getElementById("fCycleAnchor").value.trim();
+        if(!/^[01]{2,31}$/.test(p)){ toast("Pattern: только 0/1, длина 2..31"); return; }
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){ toast("Anchor: YYYY-MM-DD"); return; }
+        body.cyclePattern = p;
+        body.cycleAnchorDate = a;
+      }
+
+      try{
+        const res = await apiFetch("/api/series", { method:"POST", body: JSON.stringify(body) });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "save_failed");
+        closeModal();
+        await loadDay(true);
+        toast("Событие добавлено");
+      }catch(e){
+        toast("Ошибка: "+e.message);
+      }
+    }
+
+    function render(){
       const root = document.getElementById("app");
 
-      if (!tg) {
+      if(!tg){
         root.innerHTML = `
           <div class="card">
             <h2>Открой в Telegram</h2>
             <div class="muted">Это приложение работает только внутри Telegram Mini App.</div>
-          </div>
-        `;
+          </div>`;
         return;
       }
 
-      const loadingLine = state.loading ? `<div class="muted">Загрузка...</div>` : ``;
-      const errorLine = state.error ? `<div class="err">Ошибка: ${escapeHtml(state.error)}</div>` : ``;
+      const errLine = state.error ? `<div class="card"><div class="err">${escapeHtml(state.error)}</div></div>` : "";
 
-      // Если me ещё не загрузили — показываем только загрузку
-      if (!state.me) {
+      if(!state.me){
         root.innerHTML = `
           <div class="card">
-            <h2>Shared Schedule</h2>
-            ${loadingLine}
-            ${errorLine}
-            <button class="btn-primary" id="btnReload">Обновить</button>
+            <h2>Запуск…</h2>
+            <div class="muted">Получаю данные из /api/me</div>
+            <div class="divider"></div>
+            <button class="btn-pink" id="btnReload">Обновить</button>
           </div>
+          ${errLine}
         `;
-        document.getElementById("btnReload").onclick = loadMe;
+        document.getElementById("btnReload").onclick = init;
         return;
       }
 
-      if (!state.me.paired) {
-        // Экран подключения
+      if(!state.me.paired){
+        stopPolling();
         root.innerHTML = `
           <div class="card">
             <h2>Подключение пары</h2>
-            <div class="muted">Приватное приложение на 2 человек. Создай PIN и отправь второму человеку или введи PIN, который прислали тебе.</div>
-            ${loadingLine}
-            ${errorLine}
+            <div class="muted">Приватно на 2 человека. Создай PIN и отправь второму — или введи PIN, который прислали тебе.</div>
           </div>
 
           <div class="card">
             <h2>Создать PIN</h2>
-            <button class="btn-primary" id="btnCreate">Создать PIN на 10 минут</button>
-
+            <button class="btn-pink" id="btnCreate">Создать PIN на 10 минут</button>
             ${state.lastPin ? `
-              <div class="pin">${state.lastPin}</div>
+              <div class="pin">${escapeHtml(state.lastPin)}</div>
               <div class="row">
-                <button class="btn-secondary" id="btnCopy">Скопировать</button>
-                <button class="btn-secondary" id="btnRefreshMe">Я уже подключил(а) второго</button>
+                <button class="btn-ghost" id="btnCopy">Скопировать</button>
+                <button class="btn-ghost" id="btnRefreshMe">Обновить статус</button>
               </div>
-              <div class="muted">PIN одноразовый. Как только второй подключится — он сгорит.</div>
+              <div class="muted">PIN одноразовый: после подключения второго — сгорит.</div>
             ` : ``}
           </div>
 
           <div class="card">
             <h2>Ввести PIN</h2>
             <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="6 цифр" />
-            <button class="btn-primary" id="btnJoin">Подключиться</button>
+            <button class="btn-pink" id="btnJoin">Подключиться</button>
           </div>
 
-          <div class="card">
-            <h2>Debug</h2>
-            <pre>${escapeHtml(JSON.stringify(state.me, null, 2))}</pre>
-          </div>
+          ${errLine}
         `;
 
         document.getElementById("btnCreate").onclick = createPair;
-
-        if (state.lastPin) {
-          document.getElementById("btnCopy").onclick = () => copyText(state.lastPin);
-          document.getElementById("btnRefreshMe").onclick = loadMe;
+        if(state.lastPin){
+          document.getElementById("btnCopy").onclick = ()=>copyText(state.lastPin);
+          document.getElementById("btnRefreshMe").onclick = async ()=>{ await loadMe(); render(); };
         }
-
         const pinInput = document.getElementById("pinInput");
-        pinInput.addEventListener("input", () => {
-          // оставляем только цифры
-          pinInput.value = pinInput.value.replace(/\D/g, "").slice(0, 6);
+        pinInput.addEventListener("input", ()=>{
+          pinInput.value = pinInput.value.replace(/\D/g,"").slice(0,6);
         });
-
-        document.getElementById("btnJoin").onclick = () => {
+        document.getElementById("btnJoin").onclick = ()=>{
           const pin = pinInput.value.trim();
-          if (!/^\d{6}$/.test(pin)) {
-            state.error = "Введите 6 цифр";
-            render();
-            return;
-          }
+          if(!/^\d{6}$/.test(pin)){ state.error="Введите 6 цифр"; render(); return; }
           joinPair(pin);
         };
-
         return;
       }
 
-      // Экран “подключено”
+      // paired => Today screen
+      const members = state.dayData?.members || [];
+      const meName = "You";
+      const otherName = state.me.otherUserId ? "Partner" : "Waiting…";
+
       root.innerHTML = `
         <div class="card">
-          <h2>✅ Пара подключена</h2>
-          <div class="muted">Дальше мы сделаем главный экран с двумя графиками.</div>
-          <div class="ok">spaceId: ${escapeHtml(String(state.me.spaceId))}</div>
-          <div class="muted">otherUserId: ${escapeHtml(String(state.me.otherUserId || "—"))}</div>
-          <button class="btn-primary" id="btnReload2">Обновить /api/me</button>
+          <div class="row" style="align-items:flex-start;">
+            <div>
+              <h2>Today</h2>
+              <div class="muted">
+                <span class="pill">Дата: <span class="mono">${escapeHtml(state.date)}</span></span>
+                <span class="pill">День: <span class="mono">${escapeHtml(fmtDow(state.date))}</span></span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
+              <div class="small">poll: <span class="mono">${state.pollTimer ? "on" : "off"}</span></div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="footer-actions">
+            <button class="btn-ghost" id="btnPrev">←</button>
+            <button class="btn-pink" id="btnAdd">+ Событие</button>
+            <button class="btn-ghost" id="btnNext">→</button>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <button class="btn-ghost" id="btnToday">Сегодня</button>
+            <button class="btn-ghost" id="btnRefreshDay">Обновить</button>
+          </div>
         </div>
 
+        <div class="timelines">
+          <div id="tlMe"></div>
+          <div id="tlOther"></div>
+        </div>
+
+        ${errLine}
+
         <div class="card">
-          <h2>Debug</h2>
-          <pre>${escapeHtml(JSON.stringify(state.me, null, 2))}</pre>
+          <h2>Members</h2>
+          <div class="muted">${members.length ? members.map(m=>`<span class="pill mono">${escapeHtml(m.tgUserId)}</span>`).join(" ") : "—"}</div>
         </div>
       `;
-      document.getElementById("btnReload2").onclick = loadMe;
+
+      document.getElementById("btnPrev").onclick = async ()=>{
+        state.date = addDays(state.date, -1);
+        state.since = null;
+        await loadDay(true);
+      };
+      document.getElementById("btnNext").onclick = async ()=>{
+        state.date = addDays(state.date, +1);
+        state.since = null;
+        await loadDay(true);
+      };
+      document.getElementById("btnToday").onclick = async ()=>{
+        state.date = todayISO();
+        state.since = null;
+        await loadDay(true);
+      };
+      document.getElementById("btnRefreshDay").onclick = ()=>loadDay(true);
+      document.getElementById("btnAdd").onclick = openAddEvent;
+
+      // render timelines
+      renderTimeline("tlMe", myId(), meName);
+      renderTimeline("tlOther", otherId(), otherName);
+    }
+
+    // wiring modal controls
+    function wireModals(){
+      document.getElementById("modalClose").onclick = closeModal;
+      document.getElementById("btnSave").onclick = saveEvent;
+      document.getElementById("fRecurrence").addEventListener("change", ()=>{
+        syncRecurrenceUI();
+      });
+
+      // weekly buttons toggle
+      document.getElementById("weeklyBox").querySelectorAll("button[data-d]").forEach(b=>{
+        b.addEventListener("click", ()=>{
+          const d = Number(b.getAttribute("data-d"));
+          state.weeklyMask = state.weeklyMask ^ (1<<d);
+          setWeeklyBtnStyles();
+        });
+      });
+
+      // note modal
+      document.getElementById("noteClose").onclick = closeNoteModal;
+      document.getElementById("btnAddNote").onclick = ()=>{
+        document.getElementById("addNoteBox").classList.toggle("hidden");
+      };
+      document.getElementById("btnSendNote").onclick = sendNote;
+      document.getElementById("btnDeleteSeries").onclick = deleteSeries;
     }
 
     function escapeHtml(s) {
@@ -265,9 +1167,20 @@
         .replaceAll("'", "&#039;");
     }
 
-    // старт
-    if (tg) tg.ready();
-    loadMe();
+    async function init(){
+      state.error = null;
+      if (tg) tg.ready();
+      await loadMe();
+      if(state.me?.paired){
+        await loadDay(true);
+        startPolling();
+      }
+      wireModals();
+      render();
+    }
+
+    // Start
+    init();
   </script>
 </body>
 </html>

@@ -5,58 +5,269 @@
   <title>Shared Schedule</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Telegram WebApp -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       padding: 16px;
-      background: #f7f7f7;
+      background: #f6f6f7;
+      color: #111;
+    }
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      margin-bottom: 12px;
+    }
+    h2 { margin: 0 0 10px 0; font-size: 18px; }
+    .muted { color: #666; font-size: 13px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 0;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-primary { background: #2a7cff; color: #fff; }
+    .btn-secondary { background: #eee; color: #111; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+    .pin {
+      font-size: 28px;
+      letter-spacing: 4px;
+      font-weight: 700;
+      text-align: center;
+      padding: 10px 0;
     }
     pre {
       background: #111;
       color: #0f0;
-      padding: 12px;
+      padding: 10px;
+      border-radius: 12px;
       overflow: auto;
+      font-size: 12px;
     }
-    button {
-      padding: 12px 16px;
-      font-size: 16px;
-      margin-top: 12px;
-    }
+    .hidden { display: none; }
+    .ok { color: #1a7f37; font-weight: 600; }
+    .err { color: #b42318; font-weight: 600; }
   </style>
 </head>
 <body>
-  <h2>Telegram Mini App</h2>
-
-  <button id="btn">Запросить /api/me</button>
-
-  <pre id="output">Нажми кнопку</pre>
+  <div id="app"></div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.ready();
+    const tg = window.Telegram?.WebApp;
 
-    const output = document.getElementById("output");
-    const btn = document.getElementById("btn");
+    const state = {
+      me: null,
+      lastPin: null,
+      error: null,
+      loading: false,
+    };
 
-    btn.onclick = async () => {
-      output.textContent = "Запрос...";
+    function apiFetch(path, options = {}) {
+      if (!tg || !tg.initData) throw new Error("Telegram WebApp initData not found");
+      const headers = Object.assign({}, options.headers || {}, {
+        "Content-Type": "application/json",
+        "X-TG-INIT-DATA": tg.initData
+      });
+      return fetch(path, Object.assign({}, options, { headers }));
+    }
 
+    async function loadMe() {
+      state.loading = true;
+      state.error = null;
+      render();
       try {
-        const res = await fetch("/api/me", {
-          headers: {
-            "X-TG-INIT-DATA": tg.initData
-          }
+        const res = await apiFetch("/api/me");
+        const data = await res.json();
+        state.me = data;
+      } catch (e) {
+        state.error = e.message;
+      } finally {
+        state.loading = false;
+        render();
+      }
+    }
+
+    async function createPair() {
+      state.loading = true;
+      state.error = null;
+      state.lastPin = null;
+      render();
+      try {
+        const res = await apiFetch("/api/space/create", { method: "POST", body: "{}" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "create_failed");
+        state.lastPin = data.pin;
+      } catch (e) {
+        state.error = e.message;
+      } finally {
+        state.loading = false;
+        render();
+      }
+    }
+
+    async function joinPair(pin) {
+      state.loading = true;
+      state.error = null;
+      render();
+      try {
+        const res = await apiFetch("/api/space/join", {
+          method: "POST",
+          body: JSON.stringify({ pin })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "join_failed");
+        await loadMe(); // обновляем статус paired
+      } catch (e) {
+        state.error = e.message;
+        state.loading = false;
+        render();
+      }
+    }
+
+    function copyText(text) {
+      if (!text) return;
+      navigator.clipboard?.writeText(text);
+      tg?.showPopup?.({ title: "Скопировано", message: text });
+    }
+
+    function render() {
+      const root = document.getElementById("app");
+
+      if (!tg) {
+        root.innerHTML = `
+          <div class="card">
+            <h2>Открой в Telegram</h2>
+            <div class="muted">Это приложение работает только внутри Telegram Mini App.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const loadingLine = state.loading ? `<div class="muted">Загрузка...</div>` : ``;
+      const errorLine = state.error ? `<div class="err">Ошибка: ${escapeHtml(state.error)}</div>` : ``;
+
+      // Если me ещё не загрузили — показываем только загрузку
+      if (!state.me) {
+        root.innerHTML = `
+          <div class="card">
+            <h2>Shared Schedule</h2>
+            ${loadingLine}
+            ${errorLine}
+            <button class="btn-primary" id="btnReload">Обновить</button>
+          </div>
+        `;
+        document.getElementById("btnReload").onclick = loadMe;
+        return;
+      }
+
+      if (!state.me.paired) {
+        // Экран подключения
+        root.innerHTML = `
+          <div class="card">
+            <h2>Подключение пары</h2>
+            <div class="muted">Приватное приложение на 2 человек. Создай PIN и отправь второму человеку или введи PIN, который прислали тебе.</div>
+            ${loadingLine}
+            ${errorLine}
+          </div>
+
+          <div class="card">
+            <h2>Создать PIN</h2>
+            <button class="btn-primary" id="btnCreate">Создать PIN на 10 минут</button>
+
+            ${state.lastPin ? `
+              <div class="pin">${state.lastPin}</div>
+              <div class="row">
+                <button class="btn-secondary" id="btnCopy">Скопировать</button>
+                <button class="btn-secondary" id="btnRefreshMe">Я уже подключил(а) второго</button>
+              </div>
+              <div class="muted">PIN одноразовый. Как только второй подключится — он сгорит.</div>
+            ` : ``}
+          </div>
+
+          <div class="card">
+            <h2>Ввести PIN</h2>
+            <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="6 цифр" />
+            <button class="btn-primary" id="btnJoin">Подключиться</button>
+          </div>
+
+          <div class="card">
+            <h2>Debug</h2>
+            <pre>${escapeHtml(JSON.stringify(state.me, null, 2))}</pre>
+          </div>
+        `;
+
+        document.getElementById("btnCreate").onclick = createPair;
+
+        if (state.lastPin) {
+          document.getElementById("btnCopy").onclick = () => copyText(state.lastPin);
+          document.getElementById("btnRefreshMe").onclick = loadMe;
+        }
+
+        const pinInput = document.getElementById("pinInput");
+        pinInput.addEventListener("input", () => {
+          // оставляем только цифры
+          pinInput.value = pinInput.value.replace(/\D/g, "").slice(0, 6);
         });
 
-        const data = await res.json();
-        output.textContent = JSON.stringify(data, null, 2);
-      } catch (e) {
-        output.textContent = "Ошибка: " + e.message;
+        document.getElementById("btnJoin").onclick = () => {
+          const pin = pinInput.value.trim();
+          if (!/^\d{6}$/.test(pin)) {
+            state.error = "Введите 6 цифр";
+            render();
+            return;
+          }
+          joinPair(pin);
+        };
+
+        return;
       }
-    };
+
+      // Экран “подключено”
+      root.innerHTML = `
+        <div class="card">
+          <h2>✅ Пара подключена</h2>
+          <div class="muted">Дальше мы сделаем главный экран с двумя графиками.</div>
+          <div class="ok">spaceId: ${escapeHtml(String(state.me.spaceId))}</div>
+          <div class="muted">otherUserId: ${escapeHtml(String(state.me.otherUserId || "—"))}</div>
+          <button class="btn-primary" id="btnReload2">Обновить /api/me</button>
+        </div>
+
+        <div class="card">
+          <h2>Debug</h2>
+          <pre>${escapeHtml(JSON.stringify(state.me, null, 2))}</pre>
+        </div>
+      `;
+      document.getElementById("btnReload2").onclick = loadMe;
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // старт
+    if (tg) tg.ready();
+    loadMe();
   </script>
 </body>
 </html>

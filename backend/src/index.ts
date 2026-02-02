@@ -13,6 +13,14 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+const publicDir = path.resolve(__dirname, "../public");
+app.use(express.static(publicDir));
+
+// когда открывают сайт (/), отдаём index.html
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(publicDir, "index.html"));
+});
+
 
 migrate();
 

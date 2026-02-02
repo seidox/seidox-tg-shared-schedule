@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shared Schedule</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Telegram WebApp -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 16px;
+      background: #f7f7f7;
+    }
+    pre {
+      background: #111;
+      color: #0f0;
+      padding: 12px;
+      overflow: auto;
+    }
+    button {
+      padding: 12px 16px;
+      font-size: 16px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Telegram Mini App</h2>
+
+  <button id="btn">Запросить /api/me</button>
+
+  <pre id="output">Нажми кнопку</pre>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+
+    const output = document.getElementById("output");
+    const btn = document.getElementById("btn");
+
+    btn.onclick = async () => {
+      output.textContent = "Запрос...";
+
+      try {
+        const res = await fetch("/api/me", {
+          headers: {
+            "X-TG-INIT-DATA": tg.initData
+          }
+        });
+
+        const data = await res.json();
+        output.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        output.textContent = "Ошибка: " + e.message;
+      }
+    };
+  </script>
+</body>
+</html>

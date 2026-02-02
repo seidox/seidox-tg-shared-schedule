@@ -1,26 +1,31 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { requireTelegramAuth } from "../auth/telegramAuth";
-import { getMembershipByUser } from "../repo";
+import { getMembershipByUser, getDayNotes } from "../repo";
 import { resolveDay } from "../services/resolveDay";
 import { db } from "../db";
 
 export const dayRouter = Router();
 
-dayRouter.get("/day", requireTelegramAuth, (req, res) => {
+dayRouter.get("/day", requireTelegramAuth, (req: Request, res: Response) => {
   const tgUserId = req.user!.tgUserId;
+
   const m = getMembershipByUser(tgUserId);
   if (!m) return res.status(403).json({ error: "not_paired" });
+
+  const spaceId = Number(m.spaceId);
 
   const date = String(req.query.date || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: "bad_date" });
 
   const since = req.query.since ? String(req.query.since) : null;
-
   const serverTime = new Date().toISOString();
 
-  let events = resolveDay(m.spaceId, date);
+  let events = resolveDay(spaceId, date);
 
-  // Notes for that day
+  // ✅ day-notes (без времени)
+  let dayNotes = getDayNotes(spaceId, date) as any[];
+
+  // Notes for that day (к событиям)
   let notes = db
     .prepare(
       `
@@ -30,18 +35,18 @@ dayRouter.get("/day", requireTelegramAuth, (req, res) => {
       ORDER BY created_at ASC
     `
     )
-    .all(m.spaceId, date) as any[];
+    .all(spaceId, date) as any[];
 
   if (since) {
-    // filter changes since time
-    events = events.filter((e) => e.updatedAt > since);
-    notes = notes.filter((n) => n.createdAt > since);
+    events = events.filter((e: any) => e.updatedAt > since);
+    notes = notes.filter((n: any) => n.createdAt > since);
+    dayNotes = dayNotes.filter((n: any) => n.createdAt > since);
   }
 
   // members
   const members = db
     .prepare(`SELECT tg_user_id as tgUserId FROM members WHERE space_id = ? ORDER BY role DESC, joined_at ASC`)
-    .all(m.spaceId) as any[];
+    .all(spaceId) as any[];
 
   return res.json({
     date,
@@ -49,5 +54,7 @@ dayRouter.get("/day", requireTelegramAuth, (req, res) => {
     members,
     events,
     notes,
+    dayNotes,
   });
 });
+

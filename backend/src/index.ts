@@ -4,13 +4,7 @@ import dotenv from "dotenv";
 import { migrate } from "./db";
 import { requireTelegramAuth } from "./auth/telegramAuth";
 import { spaceRouter } from "./routes/space";
-import {
-  getMembershipByUser,
-  getOtherUserId,
-  getMemberIds,
-  addDayNote,
-  getDayNotes,
-} from "./repo";
+import { getMembershipByUser, getOtherUserId } from "./repo";
 import path from "path";
 import { dayRouter } from "./routes/day";
 import { seriesRouter } from "./routes/series";

@@ -112,4 +112,22 @@ export function migrate() {
     insertMigration.run(m.id, new Date().toISOString());
     console.log(`Applied migration ${m.id}`);
   }
+
+  db.exec(`
+  CREATE TABLE IF NOT EXISTS day_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    space_id INTEGER NOT NULL,
+    date TEXT NOT NULL,                    -- YYYY-MM-DD
+    author_tg_user_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_day_notes_space_date
+  ON day_notes(space_id, date);
+
+  CREATE INDEX IF NOT EXISTS idx_day_notes_space_date_created
+  ON day_notes(space_id, date, created_at);
+`);
+
 }

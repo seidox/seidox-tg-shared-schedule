@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { requireTelegramAuth } from "../auth/telegramAuth";
 import { generatePin6, hashPin } from "../utils/pin";
 import {
@@ -9,14 +9,15 @@ import {
   countMembers,
   addMember,
   burnSpacePin,
+  addDayNote,
 } from "../repo";
 
 export const spaceRouter = Router();
 
-spaceRouter.post("/create", requireTelegramAuth, (req, res) => {
+spaceRouter.post("/create", requireTelegramAuth, (req: Request, res: Response) => {
   const tgUserId = req.user!.tgUserId;
 
-  // если уже привязан — не создаём заново
+  // если уже в space — не создаём заново
   const m = getMembershipByUser(tgUserId);
   if (m) {
     return res.status(400).json({ error: "already_paired" });
@@ -33,7 +34,7 @@ spaceRouter.post("/create", requireTelegramAuth, (req, res) => {
   return res.json({ spaceId, pin, pinExpiresAt: expiresAt });
 });
 
-spaceRouter.post("/join", requireTelegramAuth, (req, res) => {
+spaceRouter.post("/join", requireTelegramAuth, (req: Request, res: Response) => {
   const tgUserId = req.user!.tgUserId;
 
   const m = getMembershipByUser(tgUserId);
@@ -58,3 +59,25 @@ spaceRouter.post("/join", requireTelegramAuth, (req, res) => {
 
   return res.json({ spaceId: row.spaceId, paired: true });
 });
+
+// ✅ заметка по ДАТЕ (без времени)
+spaceRouter.post("/daynote", requireTelegramAuth, (req: Request, res: Response) => {
+  const tgUserId = req.user!.tgUserId;
+
+  const membership = getMembershipByUser(tgUserId);
+  if (!membership) return res.status(403).json({ error: "not_in_space" });
+
+  const spaceId = Number(membership.spaceId);
+  const { date, text } = req.body || {};
+
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+    return res.status(400).json({ error: "bad_date" });
+  }
+  const cleanText = String(text || "").trim();
+  if (!cleanText) return res.status(400).json({ error: "empty_text" });
+  if (cleanText.length > 2000) return res.status(400).json({ error: "too_long" });
+
+  addDayNote(spaceId, String(date), tgUserId, cleanText);
+  return res.json({ ok: true });
+});
+

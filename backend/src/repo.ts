@@ -58,7 +58,9 @@ export function setSpacePin(spaceId: number, pinHash: string, expiresAtIso: stri
   );
 }
 
-export function findSpaceByPinHash(pinHash: string): { spaceId: number; pinExpiresAt: string | null } | null {
+export function findSpaceByPinHash(
+  pinHash: string
+): { spaceId: number; pinExpiresAt: string | null } | null {
   const row = db
     .prepare(`SELECT id as spaceId, pin_expires_at as pinExpiresAt FROM spaces WHERE pin_hash = ?`)
     .get(pinHash) as any;
@@ -81,3 +83,66 @@ export function addMember(spaceId: number, tgUserId: string) {
 export function burnSpacePin(spaceId: number) {
   db.prepare(`UPDATE spaces SET pin_hash = NULL, pin_expires_at = NULL WHERE id = ?`).run(spaceId);
 }
+
+// ✅ список участников space (реальная таблица members)
+export function getMemberIds(spaceId: number): string[] {
+  const rows = db
+    .prepare(
+      `
+      SELECT tg_user_id AS tgUserId
+      FROM members
+      WHERE space_id = ?
+      ORDER BY tg_user_id ASC
+    `
+    )
+    .all(spaceId) as Array<{ tgUserId: string }>;
+
+  return rows.map((r) => String(r.tgUserId));
+}
+
+export function getOtherUserId(spaceId: number, meTgUserId: string): string | null {
+  const row = db
+    .prepare(
+      `
+      SELECT tg_user_id AS tgUserId
+      FROM members
+      WHERE space_id = ?
+        AND tg_user_id != ?
+      LIMIT 1
+    `
+    )
+    .get(spaceId, meTgUserId) as { tgUserId?: string } | undefined;
+
+  return row?.tgUserId ? String(row.tgUserId) : null;
+}
+
+// ✅ day notes (без времени)
+export function addDayNote(spaceId: number, date: string, authorTgUserId: string, text: string) {
+  db.prepare(
+    `
+    INSERT INTO day_notes(space_id, date, author_tg_user_id, text)
+    VALUES (?, ?, ?, ?)
+  `
+  ).run(spaceId, date, authorTgUserId, text);
+}
+
+export function getDayNotes(spaceId: number, date: string) {
+  return db
+    .prepare(
+      `
+      SELECT
+        id,
+        space_id AS spaceId,
+        date,
+        author_tg_user_id AS authorTgUserId,
+        text,
+        created_at AS createdAt
+      FROM day_notes
+      WHERE space_id = ?
+        AND date = ?
+      ORDER BY created_at ASC
+    `
+    )
+    .all(spaceId, date);
+}
+

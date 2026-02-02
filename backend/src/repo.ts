@@ -4,6 +4,7 @@ export function getMembershipByUser(tgUserId: string): {
   spaceId: number;
   role: string;
   otherUserId: string | null;
+  membersCount: number;
 } | null {
   const row = db
     .prepare(
@@ -13,7 +14,7 @@ export function getMembershipByUser(tgUserId: string): {
       WHERE m.tg_user_id = ?
     `
     )
-    .get(tgUserId) as any;
+    .get(tgUserId) as { spaceId: number; role: string } | undefined;
 
   if (!row) return null;
 
@@ -26,12 +27,23 @@ export function getMembershipByUser(tgUserId: string): {
       LIMIT 1
     `
     )
-    .get(row.spaceId, tgUserId) as any;
+    .get(row.spaceId, tgUserId) as { otherUserId?: string } | undefined;
+
+  const countRow = db
+    .prepare(
+      `
+      SELECT COUNT(*) as cnt
+      FROM members
+      WHERE space_id = ?
+    `
+    )
+    .get(row.spaceId) as { cnt: number };
 
   return {
     spaceId: row.spaceId,
     role: row.role,
     otherUserId: other?.otherUserId ?? null,
+    membersCount: Number(countRow.cnt),
   };
 }
 
@@ -147,52 +159,60 @@ export function getDayNotes(spaceId: number, date: string) {
 }
 
 export function leaveSpace(tgUserId: string) {
-  db.prepare(`DELETE FROM members WHERE tg_user_id = ?`).run(tgUserId);
+  const tx = db.transaction((userId: string) => {
+    const membership = db
+      .prepare(
+        `
+        SELECT space_id as spaceId
+        FROM members
+        WHERE tg_user_id = ?
+      `
+      )
+      .get(userId) as { spaceId: number } | undefined;
+
+    if (!membership) return;
+
+    const spaceId = Number(membership.spaceId);
+    db.prepare(`DELETE FROM members WHERE tg_user_id = ?`).run(userId);
+
+    const remaining = db
+      .prepare(`SELECT COUNT(*) as cnt FROM members WHERE space_id = ?`)
+      .get(spaceId) as { cnt: number };
+
+    if (Number(remaining.cnt) === 0) {
+      db.prepare(`DELETE FROM spaces WHERE id = ?`).run(spaceId);
+    }
+  });
+
+  tx(tgUserId);
 }
 
 // Жёсткий сброс всего space (для owner)
-export function resetSpaceByOwner(tgUserId: string) {
-  const m = getMembershipByUser(tgUserId);
-  if (!m) return { ok: true, already: "not_in_space" };
-
-  if (m.role !== "owner") return { ok: false, error: "not_owner" };
-
-  const spaceId = Number(m.spaceId);
-  db.prepare(`DELETE FROM members WHERE space_id = ?`).run(spaceId);
-  db.prepare(`DELETE FROM spaces WHERE id = ?`).run(spaceId);
-
-  // На всякий случай чистим заметки/серии/notes если есть таблицы
-  try { db.prepare(`DELETE FROM day_notes WHERE space_id = ?`).run(spaceId); } catch {}
-  try { db.prepare(`DELETE FROM notes WHERE space_id = ?`).run(spaceId); } catch {}
-  try { db.prepare(`DELETE FROM series WHERE space_id = ?`).run(spaceId); } catch {}
-
-  return { ok: true };
-}
-
-export function leaveSpace(tgUserId: string) {
-  db.prepare(`DELETE FROM members WHERE tg_user_id = ?`).run(tgUserId);
-}
-
 export function resetSpaceByOwner(ownerTgUserId: string): { ok: boolean; reason?: string } {
-  const m = db.prepare(`
-    SELECT space_id AS spaceId, role
-    FROM members
-    WHERE tg_user_id = ?
-  `).get(ownerTgUserId) as any;
+  const m = db
+    .prepare(
+      `
+      SELECT space_id AS spaceId, role
+      FROM members
+      WHERE tg_user_id = ?
+    `
+    )
+    .get(ownerTgUserId) as { spaceId: number; role: string } | undefined;
 
   if (!m) return { ok: false, reason: "not_in_space" };
   if (m.role !== "owner") return { ok: false, reason: "not_owner" };
 
   const spaceId = Number(m.spaceId);
 
-  db.prepare(`DELETE FROM members WHERE space_id = ?`).run(spaceId);
-  db.prepare(`UPDATE spaces SET pin_hash = NULL, pin_expires_at = NULL WHERE id = ?`).run(spaceId);
+  const tx = db.transaction((id: number) => {
+    db.prepare(`DELETE FROM members WHERE space_id = ?`).run(id);
+    db.prepare(`DELETE FROM spaces WHERE id = ?`).run(id);
+    db.prepare(`DELETE FROM day_notes WHERE space_id = ?`).run(id);
+    db.prepare(`DELETE FROM notes WHERE space_id = ?`).run(id);
+    db.prepare(`DELETE FROM series WHERE space_id = ?`).run(id);
+  });
 
-  // Если хочешь, можно подчистить day_notes / notes / series:
-  try { db.prepare(`DELETE FROM day_notes WHERE space_id = ?`).run(spaceId); } catch {}
-  try { db.prepare(`DELETE FROM notes WHERE space_id = ?`).run(spaceId); } catch {}
-  try { db.prepare(`DELETE FROM series WHERE space_id = ?`).run(spaceId); } catch {}
+  tx(spaceId);
 
   return { ok: true };
 }
-

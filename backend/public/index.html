@@ -269,13 +269,14 @@
     .hlabel{
       position:absolute;
       left:10px;
-      transform: translateY(-50%);
+      height:18px;
+      line-height:18px;
       font-size:11px;
       color: rgba(244,244,255,.42);
       background: rgba(11,11,16,.70);
       border:1px solid rgba(255,255,255,.08);
       border-radius:999px;
-      padding:3px 8px;
+      padding:0 8px;
       pointer-events:none;
     }
 
@@ -509,7 +510,7 @@
     };
 
     function realPaired(){
-      return (state.me?.paired === true) && !!state.me?.otherUserId;
+      return state.me?.membersCount === 2 && state.me?.paired === true;
     }
 
     function apiFetch(path, options = {}) {
@@ -739,11 +740,12 @@
             <div class="daygrid">
       `;
 
+      const labelHeight = 18;
       for(let h=0; h<=24; h++){
         const top = h*60;
         html += `<div class="hline" style="top:${top}px"></div>`;
         if(h<24){
-          html += `<div class="hlabel" style="top:${top+1}px">${escapeHtml(String(h).padStart(2,"0")+":00")}</div>`;
+          html += `<div class="hlabel" style="top:${top + 1 - labelHeight / 2}px">${escapeHtml(String(h).padStart(2,"0")+":00")}</div>`;
         }
       }
 
@@ -1074,6 +1076,8 @@
             <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId || "—"))}</span></div>
+            <div style="height:8px;"></div>
+            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount ?? 0))}</span></div>
           </div>
 
           <div class="card">
@@ -1092,6 +1096,13 @@
             <h2>Ввести PIN</h2>
             <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="6 цифр" />
             <button class="btn-pink" id="btnJoinPin">Подключиться</button>
+          </div>
+
+          <div class="card">
+            <h2>Сбросить связь</h2>
+            <div class="muted">Удаляет тебя из space и позволяет начать pairing заново.</div>
+            <div class="divider"></div>
+            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
           </div>
 
           ${errLine}
@@ -1113,6 +1124,8 @@
           if(!/^\d{6}$/.test(pin)){ toast("Введите 6 цифр"); return; }
           joinPair(pin);
         };
+
+        document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
 
         return;
       }
@@ -1302,11 +1315,13 @@
             <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
+            <div style="height:8px;"></div>
+            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount))}</span></div>
 
             <div class="divider"></div>
 
             <!-- ✅ FIX already_paired -->
-            <button class="btn-danger" id="btnLeaveSpace">Выйти из space (fix already_paired)</button>
+            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
             <div style="height:10px;"></div>
             <button class="btn-danger" id="btnResetSpace">OWNER: Reset space</button>
 

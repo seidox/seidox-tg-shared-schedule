@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { migrate } from "./db";
 import { requireTelegramAuth } from "./auth/telegramAuth";
+import { spaceRouter } from "./routes/space";
+import { getMembershipByUser } from "./repo";
 
 
 dotenv.config();
@@ -26,11 +28,24 @@ app.listen(port, () => {
 });
 
 app.get("/api/me", requireTelegramAuth, (req, res) => {
-  res.json({
-    tgUserId: req.user?.tgUserId,
-    firstName: req.user?.firstName,
-    username: req.user?.username,
-    paired: false
+  const tgUserId = req.user!.tgUserId;
+  const membership = getMembershipByUser(tgUserId);
+
+  if (!membership) {
+    return res.json({
+      tgUserId,
+      paired: false
+    });
+  }
+
+  return res.json({
+    tgUserId,
+    paired: true,
+    spaceId: membership.spaceId,
+    role: membership.role,
+    otherUserId: membership.otherUserId
   });
 });
+
+app.use("/api/space", spaceRouter);
 

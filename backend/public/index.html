@@ -558,7 +558,6 @@
         entries: [],
         totals: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
         stats: { weightKg: null, waterMl: null },
-        foodForm: { name: "", baseGrams: "100", kcal: "", protein: "", fat: "", carbs: "" },
         entryForm: { foodId: "custom", name: "", grams: "100", kcal: "", protein: "", fat: "", carbs: "" },
       },
 
@@ -567,7 +566,7 @@
         exercises: [],
         dayItems: [],
         exerciseForm: { name: "", category: "" },
-        setForm: { exerciseId: "", weight: "", reps: "" },
+        setForm: { exerciseId: "", exerciseName: "", category: "", weight: "", reps: "" },
         history: {}
       }
     };
@@ -737,11 +736,11 @@
       await Promise.all([loadNutritionFoods(), loadNutritionDay(), loadStatsDay()]);
     }
 
-    async function createFood(){
-      const f = state.nutrition.foodForm;
+    async function createFoodFromEntry(){
+      const f = state.nutrition.entryForm;
       const payload = {
         name: f.name.trim(),
-        baseGrams: Number(f.baseGrams || 100),
+        baseGrams: 100,
         kcal: Number(f.kcal),
         protein: Number(f.protein),
         fat: Number(f.fat),
@@ -753,9 +752,8 @@
       });
       const data = await res.json();
       if(!res.ok) throw new Error(data.error || "food_create_failed");
-      f.name = ""; f.baseGrams = "100"; f.kcal = ""; f.protein = ""; f.fat = ""; f.carbs = "";
       await loadNutritionFoods();
-      render();
+      return data.id;
     }
 
     async function addNutritionEntry(){
@@ -767,6 +765,8 @@
       if(f.foodId && f.foodId !== "custom"){
         payload.foodId = Number(f.foodId);
       } else {
+        const foodId = await createFoodFromEntry();
+        payload.foodId = Number(foodId);
         payload.name = f.name.trim();
         payload.kcal = Number(f.kcal);
         payload.protein = Number(f.protein);
@@ -845,27 +845,32 @@
       await Promise.all([loadExercises(), loadTrainingDay()]);
     }
 
-    async function createExercise(){
-      const f = state.training.exerciseForm;
+    async function createExerciseFromSet(){
+      const f = state.training.setForm;
       const res = await apiFetch("/api/training/exercise", {
         method:"POST",
-        body: JSON.stringify({ name: f.name.trim(), category: f.category.trim() })
+        body: JSON.stringify({ name: f.exerciseName.trim(), category: f.category.trim() })
       });
       const data = await res.json();
       if(!res.ok) throw new Error(data.error || "exercise_create_failed");
-      f.name = ""; f.category = "";
       await loadExercises();
-      render();
+      return data.id;
     }
 
     async function addWorkoutSet(){
       const f = state.training.setForm;
+      if(!f.exerciseId && !f.exerciseName.trim()){
+        throw new Error("Укажи упражнение");
+      }
       const payload = {
         date: state.training.date,
         exerciseId: Number(f.exerciseId),
         weight: Number(f.weight),
         reps: Number(f.reps)
       };
+      if(!payload.exerciseId){
+        payload.exerciseId = Number(await createExerciseFromSet());
+      }
       const res = await apiFetch("/api/training/workout", {
         method:"POST",
         body: JSON.stringify(payload)
@@ -1713,16 +1718,6 @@
           };
         });
 
-        document.getElementById("foodName").oninput = (e)=> state.nutrition.foodForm.name = e.target.value;
-        document.getElementById("foodBase").oninput = (e)=> state.nutrition.foodForm.baseGrams = e.target.value;
-        document.getElementById("foodKcal").oninput = (e)=> state.nutrition.foodForm.kcal = e.target.value;
-        document.getElementById("foodProtein").oninput = (e)=> state.nutrition.foodForm.protein = e.target.value;
-        document.getElementById("foodFat").oninput = (e)=> state.nutrition.foodForm.fat = e.target.value;
-        document.getElementById("foodCarbs").oninput = (e)=> state.nutrition.foodForm.carbs = e.target.value;
-        document.getElementById("btnCreateFood").onclick = async ()=>{
-          try { await createFood(); } catch(e){ toast(e.message); }
-        };
-
         return;
       }
 
@@ -1777,6 +1772,16 @@
             <h2>Добавить сет</h2>
             <div class="row" style="margin-bottom:10px;">
               <select id="setExercise">
+                <option value="">Новое упражнение</option>
+                ${exOptions}
+              </select>
+            </div>
+            <div id="newExerciseBox" class="${state.training.setForm.exerciseId ? "hidden" : ""}">
+              <div class="row" style="margin-bottom:10px;">
+                <input id="setExerciseName" placeholder="Название упражнения" value="${escapeHtml(state.training.setForm.exerciseName)}" />
+                <input id="setExerciseCategory" placeholder="Категория" value="${escapeHtml(state.training.setForm.category)}" />
+              </div>
+            </div>
                 <option value="">Выбрать упражнение</option>
                 ${exOptions}
               </select>
@@ -1793,15 +1798,6 @@
             ${itemsHtml}
           </div>
 
-          <div class="card">
-            <h2>Каталог упражнений</h2>
-            <div class="row" style="margin-bottom:10px;">
-              <input id="exerciseName" placeholder="Название" value="${escapeHtml(state.training.exerciseForm.name)}" />
-              <input id="exerciseCategory" placeholder="Категория (push/pull/legs)" value="${escapeHtml(state.training.exerciseForm.category)}" />
-            </div>
-            <button class="btn-pink" id="btnCreateExercise">Сохранить упражнение</button>
-          </div>
-
           ${errLine}
         `;
 
@@ -1813,17 +1809,19 @@
 
         const setExercise = document.getElementById("setExercise");
         setExercise.value = state.training.setForm.exerciseId;
+        setExercise.onchange = (e)=>{
+          state.training.setForm.exerciseId = e.target.value;
+          render();
+        };
+        if(!state.training.setForm.exerciseId){
+          document.getElementById("setExerciseName").oninput = (e)=> state.training.setForm.exerciseName = e.target.value;
+          document.getElementById("setExerciseCategory").oninput = (e)=> state.training.setForm.category = e.target.value;
+        }
         setExercise.onchange = (e)=> state.training.setForm.exerciseId = e.target.value;
         document.getElementById("setWeight").oninput = (e)=> state.training.setForm.weight = e.target.value;
         document.getElementById("setReps").oninput = (e)=> state.training.setForm.reps = e.target.value;
         document.getElementById("btnAddSet").onclick = async ()=>{
           try { await addWorkoutSet(); } catch(e){ toast(e.message); }
-        };
-
-        document.getElementById("exerciseName").oninput = (e)=> state.training.exerciseForm.name = e.target.value;
-        document.getElementById("exerciseCategory").oninput = (e)=> state.training.exerciseForm.category = e.target.value;
-        document.getElementById("btnCreateExercise").onclick = async ()=>{
-          try { await createExercise(); } catch(e){ toast(e.message); }
         };
 
         document.querySelectorAll("[data-history]").forEach(btn=>{

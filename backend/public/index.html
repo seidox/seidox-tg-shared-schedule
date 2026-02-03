@@ -1610,6 +1610,11 @@
           <div class="card">
             <h2>Вес и вода</h2>
             <div class="row" style="margin-bottom:10px;">
+              <input id="weightInput" placeholder="Вес (кг)" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? ""))}" />
+              <button class="btn-ghost" id="btnSaveWeight">Сохранить вес</button>
+            </div>
+            <div class="row">
+              <input id="waterInput" placeholder="Вода (мл)" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? ""))}" />
               <input id="weightInput" placeholder="Вес (кг)" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? \"\"))}" />
               <button class="btn-ghost" id="btnSaveWeight">Сохранить вес</button>
             </div>

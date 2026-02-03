@@ -30,6 +30,7 @@
       --c6:#facc15;
 
       --app-h: 100vh; /* будет заменено tg.viewportStableHeight */
+      --day-height: 580px;
     }
 
     *{ box-sizing:border-box; }
@@ -97,6 +98,9 @@
       -webkit-overflow-scrolling: touch;
       padding: 0 14px 14px;
       touch-action: manipulation;
+    }
+    .content.no-scroll{
+      overflow:hidden;
     }
 
     .card{
@@ -178,10 +182,12 @@
       backdrop-filter: blur(10px);
       display:flex;
       gap:12px;
+      overflow-x:auto;
     }
     .tabbtn{
       flex:1;
-      padding:16px 10px;
+      min-width:110px;
+      padding:14px 10px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.05);
@@ -216,7 +222,7 @@
       min-width:0;
     }
     .colhead{
-      padding:12px;
+      padding:10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -250,15 +256,16 @@
 
     .daywrap{
       position:relative;
-      height: 700px;
-      overflow:auto;
+      height:auto;
+      overflow:visible;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
     .daygrid{
       position:relative;
-      height: 1440px;
-      min-height:1440px;
+      height: var(--day-height, 1200px);
+      min-height: var(--day-height, 1200px);
+      pointer-events:none;
     }
     .hline{
       position:absolute;
@@ -269,36 +276,39 @@
     .hlabel{
       position:absolute;
       left:10px;
-      transform: translateY(-50%);
+      height:18px;
+      line-height:18px;
       font-size:11px;
       color: rgba(244,244,255,.42);
       background: rgba(11,11,16,.70);
       border:1px solid rgba(255,255,255,.08);
       border-radius:999px;
-      padding:3px 8px;
+      padding:0 8px;
       pointer-events:none;
     }
 
     .event{
       position:absolute;
-      left:60px;
+      left:56px;
       right:10px;
       border-radius:14px;
-      padding:8px 10px;
+      padding:6px 8px;
       border:1px solid rgba(255,255,255,.14);
       box-shadow: 0 10px 18px rgba(0,0,0,.35);
       cursor:pointer;
       overflow:hidden;
       -webkit-tap-highlight-color: transparent;
+      pointer-events:auto;
+      touch-action: pan-y;
     }
     .event .tt{
       font-weight:950;
-      font-size:12px;
+      font-size:11px;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       margin-bottom:3px;
     }
     .event .ss{
-      font-size:11px;
+      font-size:10px;
       color: rgba(244,244,255,.78);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
@@ -376,7 +386,7 @@
     }
     .seg button{
       flex:1;
-      padding:12px 10px;
+      padding:10px 10px;
       border-radius:14px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.04);
@@ -387,6 +397,32 @@
       background: rgba(255,45,134,.20);
       border-color: rgba(255,45,134,.45);
       color: var(--text);
+    }
+
+    body.screen-schedule .card{
+      padding:12px;
+    }
+    body.screen-schedule .notesBox .noteItem{
+      padding:8px;
+    }
+
+    body.compact{
+      --day-height: 520px;
+    }
+    body.compact.screen-schedule .card{
+      padding:10px;
+    }
+    body.compact.screen-schedule .colhead{
+      padding:8px;
+    }
+    body.compact.screen-schedule .event{
+      padding:5px 7px;
+    }
+    body.compact.screen-schedule .event .tt{
+      font-size:10px;
+    }
+    body.compact.screen-schedule .event .ss{
+      font-size:9px;
     }
   </style>
 </head>
@@ -409,6 +445,8 @@
     <div class="tabs hidden" id="tabs">
       <button class="tabbtn" id="tabSchedule">Schedule</button>
       <button class="tabbtn" id="tabCreate">Create</button>
+      <button class="tabbtn" id="tabNutrition">Nutrition</button>
+      <button class="tabbtn" id="tabTraining">Training</button>
       <button class="tabbtn" id="tabProfile">Profile</button>
     </div>
   </div>
@@ -464,6 +502,12 @@
       return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     }
 
+    function getDayHeight(){
+      const raw = getCss("--day-height");
+      const val = Number.parseFloat(raw);
+      return Number.isFinite(val) && val > 0 ? val : 580;
+    }
+
     const COLORS = [
       { id:"c1", hex:getCss("--c1") },
       { id:"c2", hex:getCss("--c2") },
@@ -478,7 +522,7 @@
       lastPin: null,
       error: null,
 
-      screen: "boot", // boot | pair | schedule | create | profile
+      screen: "boot", // boot | pair | schedule | create | nutrition | training | profile
       date: todayISO(),
       dayData: null,
       since: null,
@@ -486,6 +530,7 @@
       actionLock: false,
 
       weeklyMask: 0,
+      compact: localStorage.getItem("compactMode") === "1",
 
       createMode: "event", // event | note
       form: {
@@ -505,11 +550,35 @@
         text: ""
       },
 
-      selectedEvent: null
+      selectedEvent: null,
+
+      nutrition: {
+        date: todayISO(),
+        foods: [],
+        entries: [],
+        totals: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
+        stats: { weightKg: null, waterMl: null },
+        foodForm: { name: "", baseGrams: "100", kcal: "", protein: "", fat: "", carbs: "" },
+        entryForm: { foodId: "custom", name: "", grams: "100", kcal: "", protein: "", fat: "", carbs: "" },
+      },
+
+      training: {
+        date: todayISO(),
+        exercises: [],
+        dayItems: [],
+        exerciseForm: { name: "", category: "" },
+        setForm: { exerciseId: "", weight: "", reps: "" },
+        history: {}
+      }
     };
 
     function realPaired(){
-      return (state.me?.paired === true) && !!state.me?.otherUserId;
+      return state.me?.membersCount === 2 && state.me?.paired === true;
+    }
+
+    function applyCompactMode(){
+      document.body.classList.toggle("compact", state.compact);
+      localStorage.setItem("compactMode", state.compact ? "1" : "0");
     }
 
     function apiFetch(path, options = {}) {
@@ -552,6 +621,9 @@
       const h = Math.floor(min/60);
       const m = min%60;
       return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+    }
+    function fmtNum(n){
+      return Number(n || 0).toFixed(1);
     }
     function colorHex(id){
       return (COLORS.find(c=>c.id===id)?.hex) || getCss("--pink");
@@ -632,6 +704,185 @@
       if(state.screen === "schedule" || state.screen === "profile"){
         render();
       }
+    }
+
+    async function loadNutritionFoods(){
+      const res = await apiFetch("/api/nutrition/foods");
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "foods_failed");
+      state.nutrition.foods = data.foods || [];
+    }
+
+    async function loadNutritionDay(){
+      const date = state.nutrition.date;
+      const res = await apiFetch(`/api/nutrition/day?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "nutrition_day_failed");
+      state.nutrition.entries = data.entries || [];
+      state.nutrition.totals = data.totals || { kcal:0, protein:0, fat:0, carbs:0 };
+    }
+
+    async function loadStatsDay(){
+      const date = state.nutrition.date;
+      const res = await apiFetch(`/api/stats/day?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "stats_failed");
+      state.nutrition.stats = {
+        weightKg: data.weightKg ?? null,
+        waterMl: data.waterMl ?? null
+      };
+    }
+
+    async function ensureNutritionData(){
+      await Promise.all([loadNutritionFoods(), loadNutritionDay(), loadStatsDay()]);
+    }
+
+    async function createFood(){
+      const f = state.nutrition.foodForm;
+      const payload = {
+        name: f.name.trim(),
+        baseGrams: Number(f.baseGrams || 100),
+        kcal: Number(f.kcal),
+        protein: Number(f.protein),
+        fat: Number(f.fat),
+        carbs: Number(f.carbs)
+      };
+      const res = await apiFetch("/api/nutrition/food", {
+        method:"POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "food_create_failed");
+      f.name = ""; f.baseGrams = "100"; f.kcal = ""; f.protein = ""; f.fat = ""; f.carbs = "";
+      await loadNutritionFoods();
+      render();
+    }
+
+    async function addNutritionEntry(){
+      const f = state.nutrition.entryForm;
+      const payload = {
+        date: state.nutrition.date,
+        grams: Number(f.grams || 0)
+      };
+      if(f.foodId && f.foodId !== "custom"){
+        payload.foodId = Number(f.foodId);
+      } else {
+        payload.name = f.name.trim();
+        payload.kcal = Number(f.kcal);
+        payload.protein = Number(f.protein);
+        payload.fat = Number(f.fat);
+        payload.carbs = Number(f.carbs);
+      }
+      const res = await apiFetch("/api/nutrition/entry", {
+        method:"POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "entry_add_failed");
+      await loadNutritionDay();
+      render();
+    }
+
+    async function updateEntryGrams(entryId, grams){
+      const res = await apiFetch(`/api/nutrition/entry/${entryId}`, {
+        method:"PUT",
+        body: JSON.stringify({ grams: Number(grams) })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "entry_update_failed");
+      await loadNutritionDay();
+      render();
+    }
+
+    async function deleteEntry(entryId){
+      const res = await apiFetch(`/api/nutrition/entry/${entryId}`, { method:"DELETE" });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "entry_delete_failed");
+      await loadNutritionDay();
+      render();
+    }
+
+    async function saveWeight(){
+      const value = document.getElementById("weightInput").value;
+      const res = await apiFetch("/api/stats/weight", {
+        method:"PUT",
+        body: JSON.stringify({ date: state.nutrition.date, kg: Number(value) })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "weight_failed");
+      await loadStatsDay();
+      render();
+    }
+
+    async function saveWater(){
+      const value = document.getElementById("waterInput").value;
+      const res = await apiFetch("/api/stats/water", {
+        method:"PUT",
+        body: JSON.stringify({ date: state.nutrition.date, ml: Number(value) })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "water_failed");
+      await loadStatsDay();
+      render();
+    }
+
+    async function loadExercises(){
+      const res = await apiFetch("/api/training/exercises");
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "exercises_failed");
+      state.training.exercises = data.exercises || [];
+    }
+
+    async function loadTrainingDay(){
+      const date = state.training.date;
+      const res = await apiFetch(`/api/training/day?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "training_day_failed");
+      state.training.dayItems = data.items || [];
+    }
+
+    async function ensureTrainingData(){
+      await Promise.all([loadExercises(), loadTrainingDay()]);
+    }
+
+    async function createExercise(){
+      const f = state.training.exerciseForm;
+      const res = await apiFetch("/api/training/exercise", {
+        method:"POST",
+        body: JSON.stringify({ name: f.name.trim(), category: f.category.trim() })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "exercise_create_failed");
+      f.name = ""; f.category = "";
+      await loadExercises();
+      render();
+    }
+
+    async function addWorkoutSet(){
+      const f = state.training.setForm;
+      const payload = {
+        date: state.training.date,
+        exerciseId: Number(f.exerciseId),
+        weight: Number(f.weight),
+        reps: Number(f.reps)
+      };
+      const res = await apiFetch("/api/training/workout", {
+        method:"POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "workout_failed");
+      f.weight = ""; f.reps = "";
+      await loadTrainingDay();
+      render();
+    }
+
+    async function loadExerciseHistory(exerciseId){
+      const res = await apiFetch(`/api/training/exercise/${exerciseId}/history`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "history_failed");
+      state.training.history[exerciseId] = data.history || [];
+      render();
     }
 
     async function createPair(){
@@ -736,24 +987,28 @@
           </div>
 
           <div class="daywrap">
-            <div class="daygrid">
+            <div class="daygrid" style="height:${getDayHeight()}px; min-height:${getDayHeight()}px;">
       `;
 
+      const labelHeight = 18;
+      const scale = getDayHeight() / 1440;
       for(let h=0; h<=24; h++){
-        const top = h*60;
+        const top = h*60*scale;
         html += `<div class="hline" style="top:${top}px"></div>`;
         if(h<24){
-          html += `<div class="hlabel" style="top:${top+1}px">${escapeHtml(String(h).padStart(2,"0")+":00")}</div>`;
+          html += `<div class="hlabel" style="top:${top + 1 - labelHeight / 2}px">${escapeHtml(String(h).padStart(2,"0")+":00")}</div>`;
         }
       }
 
       for(const e of evs){
-        let top = 10, height = 70, cls = "event any";
+        let top = 10 * scale;
+        let height = Math.max(34, 70 * scale);
+        let cls = "event any";
         if(e.timeKind !== "anytime"){
           const s = Number(e.startMin ?? 0);
           const en = Number(e.endMin ?? (s+60));
-          top = Math.max(0, Math.min(1440, s));
-          height = Math.max(18, Math.min(1440-top, en - s));
+          top = Math.max(0, Math.min(1440, s)) * scale;
+          height = Math.max(14, Math.min(1440, en - s) * scale);
           cls = "event";
           if(e.timeKind === "approx") cls += " approx";
         }
@@ -1035,16 +1290,22 @@
     function setActiveTab(tab){
       const s = document.getElementById("tabSchedule");
       const c = document.getElementById("tabCreate");
+      const n = document.getElementById("tabNutrition");
+      const t = document.getElementById("tabTraining");
       const p = document.getElementById("tabProfile");
-      [s,c,p].forEach(x=>x.classList.remove("active"));
+      [s,c,n,t,p].forEach(x=>x.classList.remove("active"));
       if(tab==="schedule") s.classList.add("active");
       if(tab==="create") c.classList.add("active");
+      if(tab==="nutrition") n.classList.add("active");
+      if(tab==="training") t.classList.add("active");
       if(tab==="profile") p.classList.add("active");
     }
 
     function render(){
       const root = document.getElementById("app");
       const errLine = state.error ? `<div class="card"><div class="err">${escapeHtml(state.error)}</div></div>` : "";
+      document.body.classList.toggle("screen-schedule", state.screen === "schedule");
+      applyCompactMode();
 
       if(!tg){
         root.innerHTML = `<div class="card"><h2>Открой в Telegram</h2><div class="muted">Работает только внутри Telegram Mini App.</div></div>`;
@@ -1074,6 +1335,8 @@
             <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId || "—"))}</span></div>
+            <div style="height:8px;"></div>
+            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount ?? 0))}</span></div>
           </div>
 
           <div class="card">
@@ -1092,6 +1355,13 @@
             <h2>Ввести PIN</h2>
             <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="6 цифр" />
             <button class="btn-pink" id="btnJoinPin">Подключиться</button>
+          </div>
+
+          <div class="card">
+            <h2>Сбросить связь</h2>
+            <div class="muted">Удаляет тебя из space и позволяет начать pairing заново.</div>
+            <div class="divider"></div>
+            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
           </div>
 
           ${errLine}
@@ -1113,6 +1383,8 @@
           if(!/^\d{6}$/.test(pin)){ toast("Введите 6 цифр"); return; }
           joinPair(pin);
         };
+
+        document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
 
         return;
       }
@@ -1289,6 +1561,280 @@
         return;
       }
 
+      if(state.screen === "nutrition"){
+        setActiveTab("nutrition");
+
+        const foods = state.nutrition.foods || [];
+        const entryForm = state.nutrition.entryForm;
+        const foodOptions = foods.map(f=>{
+          const base = f.base_grams || 100;
+          return `<option value="${escapeHtml(String(f.id))}">${escapeHtml(f.name)} (${escapeHtml(String(f.kcal))} kcal / ${escapeHtml(String(base))}g)</option>`;
+        }).join("");
+
+        const entriesHtml = (state.nutrition.entries || []).map(e=>`
+          <div class="card" style="margin-bottom:10px;">
+            <div class="row" style="margin-bottom:8px;">
+              <div>
+                <b>${escapeHtml(e.name)}</b>
+                <div class="muted">${escapeHtml(fmtNum(e.kcal))} kcal • B ${escapeHtml(fmtNum(e.protein))} / Ж ${escapeHtml(fmtNum(e.fat))} / У ${escapeHtml(fmtNum(e.carbs))}</div>
+              </div>
+              <button class="btn-ghost" data-del-entry="${escapeHtml(String(e.id))}">Удалить</button>
+            </div>
+            <div class="row">
+              <input id="entryGrams-${escapeHtml(String(e.id))}" value="${escapeHtml(String(e.grams))}" />
+              <button class="btn-ghost" data-update-entry="${escapeHtml(String(e.id))}">Обновить граммы</button>
+            </div>
+          </div>
+        `).join("") || `<div class="muted">Пока нет записей за этот день.</div>`;
+
+        root.innerHTML = `
+          <div class="card">
+            <div class="row" style="align-items:flex-start;">
+              <div>
+                <h2>Nutrition</h2>
+                <div class="muted">Дневной лог питания (значения на 100г).</div>
+              </div>
+              <div style="text-align:right;">
+                <input id="nutritionDate" type="date" value="${escapeHtml(state.nutrition.date)}" />
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="row">
+              <div class="pill">Kcal: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.kcal))}</span></div>
+              <div class="pill">B: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.protein))}</span></div>
+              <div class="pill">Ж: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.fat))}</span></div>
+              <div class="pill">У: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.carbs))}</span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Вес и вода</h2>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="weightInput" placeholder="Вес (кг)" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? ""))}" />
+              <button class="btn-ghost" id="btnSaveWeight">Сохранить вес</button>
+            </div>
+            <div class="row">
+              <input id="waterInput" placeholder="Вода (мл)" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? ""))}" />
+              <button class="btn-ghost" id="btnSaveWater">Сохранить воду</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Добавить позицию</h2>
+            <div class="row" style="margin-bottom:10px;">
+              <select id="entryFoodSelect">
+                <option value="custom">Custom</option>
+                ${foodOptions}
+              </select>
+              <input id="entryGrams" placeholder="Граммы" value="${escapeHtml(entryForm.grams)}" />
+            </div>
+            <div id="customEntryBox" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
+              <div class="row" style="margin-bottom:10px;">
+                <input id="entryName" placeholder="Название" value="${escapeHtml(entryForm.name)}" />
+                <input id="entryKcal" placeholder="Kcal/100g" value="${escapeHtml(entryForm.kcal)}" />
+              </div>
+              <div class="row">
+                <input id="entryProtein" placeholder="Белки/100g" value="${escapeHtml(entryForm.protein)}" />
+                <input id="entryFat" placeholder="Жиры/100g" value="${escapeHtml(entryForm.fat)}" />
+                <input id="entryCarbs" placeholder="Углеводы/100g" value="${escapeHtml(entryForm.carbs)}" />
+              </div>
+            </div>
+            <div class="divider"></div>
+            <button class="btn-pink" id="btnAddEntry">Добавить</button>
+          </div>
+
+          <div class="card">
+            <h2>Дневной лог</h2>
+            ${entriesHtml}
+          </div>
+
+          <div class="card">
+            <h2>Каталог блюд</h2>
+            <div class="muted" style="margin-bottom:10px;">Значения указываются на базовую граммовку (по умолчанию 100г).</div>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="foodName" placeholder="Название" value="${escapeHtml(state.nutrition.foodForm.name)}" />
+              <input id="foodBase" placeholder="База (г)" value="${escapeHtml(state.nutrition.foodForm.baseGrams)}" />
+            </div>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="foodKcal" placeholder="Kcal" value="${escapeHtml(state.nutrition.foodForm.kcal)}" />
+              <input id="foodProtein" placeholder="Белки" value="${escapeHtml(state.nutrition.foodForm.protein)}" />
+              <input id="foodFat" placeholder="Жиры" value="${escapeHtml(state.nutrition.foodForm.fat)}" />
+              <input id="foodCarbs" placeholder="Углеводы" value="${escapeHtml(state.nutrition.foodForm.carbs)}" />
+            </div>
+            <button class="btn-pink" id="btnCreateFood">Сохранить блюдо</button>
+          </div>
+
+          ${errLine}
+        `;
+
+        document.getElementById("nutritionDate").onchange = async (e)=>{
+          state.nutrition.date = e.target.value;
+          await loadNutritionDay();
+          await loadStatsDay();
+          render();
+        };
+
+        document.getElementById("btnSaveWeight").onclick = async ()=>{
+          try { await saveWeight(); } catch(e){ toast(e.message); }
+        };
+        document.getElementById("btnSaveWater").onclick = async ()=>{
+          try { await saveWater(); } catch(e){ toast(e.message); }
+        };
+
+        const selectFood = document.getElementById("entryFoodSelect");
+        selectFood.value = entryForm.foodId;
+        selectFood.onchange = (e)=>{
+          entryForm.foodId = e.target.value;
+          render();
+        };
+        document.getElementById("entryGrams").oninput = (e)=> entryForm.grams = e.target.value;
+        if(entryForm.foodId === "custom"){
+          document.getElementById("entryName").oninput = (e)=> entryForm.name = e.target.value;
+          document.getElementById("entryKcal").oninput = (e)=> entryForm.kcal = e.target.value;
+          document.getElementById("entryProtein").oninput = (e)=> entryForm.protein = e.target.value;
+          document.getElementById("entryFat").oninput = (e)=> entryForm.fat = e.target.value;
+          document.getElementById("entryCarbs").oninput = (e)=> entryForm.carbs = e.target.value;
+        }
+
+        document.getElementById("btnAddEntry").onclick = async ()=>{
+          try { await addNutritionEntry(); } catch(e){ toast(e.message); }
+        };
+
+        document.querySelectorAll("[data-del-entry]").forEach(btn=>{
+          btn.onclick = async ()=>{
+            try { await deleteEntry(btn.getAttribute("data-del-entry")); } catch(e){ toast(e.message); }
+          };
+        });
+        document.querySelectorAll("[data-update-entry]").forEach(btn=>{
+          btn.onclick = async ()=>{
+            const entryId = btn.getAttribute("data-update-entry");
+            const input = document.getElementById(`entryGrams-${entryId}`);
+            try { await updateEntryGrams(entryId, input.value); } catch(e){ toast(e.message); }
+          };
+        });
+
+        document.getElementById("foodName").oninput = (e)=> state.nutrition.foodForm.name = e.target.value;
+        document.getElementById("foodBase").oninput = (e)=> state.nutrition.foodForm.baseGrams = e.target.value;
+        document.getElementById("foodKcal").oninput = (e)=> state.nutrition.foodForm.kcal = e.target.value;
+        document.getElementById("foodProtein").oninput = (e)=> state.nutrition.foodForm.protein = e.target.value;
+        document.getElementById("foodFat").oninput = (e)=> state.nutrition.foodForm.fat = e.target.value;
+        document.getElementById("foodCarbs").oninput = (e)=> state.nutrition.foodForm.carbs = e.target.value;
+        document.getElementById("btnCreateFood").onclick = async ()=>{
+          try { await createFood(); } catch(e){ toast(e.message); }
+        };
+
+        return;
+      }
+
+      if(state.screen === "training"){
+        setActiveTab("training");
+
+        const exOptions = (state.training.exercises || []).map(ex=>
+          `<option value="${escapeHtml(String(ex.id))}">${escapeHtml(ex.name)}${ex.category ? " · "+escapeHtml(ex.category) : ""}</option>`
+        ).join("");
+
+        const itemsHtml = (state.training.dayItems || []).map(item=>{
+          const sets = item.sets.map(s=>`
+            <div class="pill" style="margin:6px 0;">
+              <span class="mono">${escapeHtml(String(s.weight))} кг × ${escapeHtml(String(s.reps))}</span>
+            </div>
+          `).join("") || `<div class="muted">Нет сетов</div>`;
+
+          const history = state.training.history[item.exerciseId] || [];
+          const historyHtml = history.length ? history.map(h=>`
+            <div class="muted">${escapeHtml(h.date)} • ${escapeHtml(String(h.weight))}кг × ${escapeHtml(String(h.reps))}</div>
+          `).join("") : "";
+
+          return `
+            <div class="card" style="margin-bottom:10px;">
+              <div class="row" style="margin-bottom:8px;">
+                <div>
+                  <b>${escapeHtml(item.name)}</b>
+                  ${item.category ? `<div class="muted">${escapeHtml(item.category)}</div>` : ""}
+                </div>
+                <button class="btn-ghost" data-history="${escapeHtml(String(item.exerciseId))}">История</button>
+              </div>
+              ${sets}
+              ${historyHtml ? `<div class="divider"></div>${historyHtml}` : ""}
+            </div>
+          `;
+        }).join("") || `<div class="muted">Пока нет тренировок за этот день.</div>`;
+
+        root.innerHTML = `
+          <div class="card">
+            <div class="row" style="align-items:flex-start;">
+              <div>
+                <h2>Training</h2>
+                <div class="muted">Силовые сеты по дате.</div>
+              </div>
+              <div style="text-align:right;">
+                <input id="trainingDate" type="date" value="${escapeHtml(state.training.date)}" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Добавить сет</h2>
+            <div class="row" style="margin-bottom:10px;">
+              <select id="setExercise">
+                <option value="">Выбрать упражнение</option>
+                ${exOptions}
+              </select>
+            </div>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="setWeight" placeholder="Вес (кг)" value="${escapeHtml(state.training.setForm.weight)}" />
+              <input id="setReps" placeholder="Повторы" value="${escapeHtml(state.training.setForm.reps)}" />
+            </div>
+            <button class="btn-pink" id="btnAddSet">Добавить сет</button>
+          </div>
+
+          <div class="card">
+            <h2>Лог дня</h2>
+            ${itemsHtml}
+          </div>
+
+          <div class="card">
+            <h2>Каталог упражнений</h2>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="exerciseName" placeholder="Название" value="${escapeHtml(state.training.exerciseForm.name)}" />
+              <input id="exerciseCategory" placeholder="Категория (push/pull/legs)" value="${escapeHtml(state.training.exerciseForm.category)}" />
+            </div>
+            <button class="btn-pink" id="btnCreateExercise">Сохранить упражнение</button>
+          </div>
+
+          ${errLine}
+        `;
+
+        document.getElementById("trainingDate").onchange = async (e)=>{
+          state.training.date = e.target.value;
+          await loadTrainingDay();
+          render();
+        };
+
+        const setExercise = document.getElementById("setExercise");
+        setExercise.value = state.training.setForm.exerciseId;
+        setExercise.onchange = (e)=> state.training.setForm.exerciseId = e.target.value;
+        document.getElementById("setWeight").oninput = (e)=> state.training.setForm.weight = e.target.value;
+        document.getElementById("setReps").oninput = (e)=> state.training.setForm.reps = e.target.value;
+        document.getElementById("btnAddSet").onclick = async ()=>{
+          try { await addWorkoutSet(); } catch(e){ toast(e.message); }
+        };
+
+        document.getElementById("exerciseName").oninput = (e)=> state.training.exerciseForm.name = e.target.value;
+        document.getElementById("exerciseCategory").oninput = (e)=> state.training.exerciseForm.category = e.target.value;
+        document.getElementById("btnCreateExercise").onclick = async ()=>{
+          try { await createExercise(); } catch(e){ toast(e.message); }
+        };
+
+        document.querySelectorAll("[data-history]").forEach(btn=>{
+          btn.onclick = async ()=>{
+            try { await loadExerciseHistory(btn.getAttribute("data-history")); } catch(e){ toast(e.message); }
+          };
+        });
+
+        return;
+      }
+
       if(state.screen === "profile"){
         setActiveTab("profile");
 
@@ -1302,15 +1848,21 @@
             <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
+            <div style="height:8px;"></div>
+            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount))}</span></div>
 
             <div class="divider"></div>
 
             <!-- ✅ FIX already_paired -->
-            <button class="btn-danger" id="btnLeaveSpace">Выйти из space (fix already_paired)</button>
+            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
             <div style="height:10px;"></div>
             <button class="btn-danger" id="btnResetSpace">OWNER: Reset space</button>
 
             <div class="divider"></div>
+            <div class="row" style="margin-bottom:10px;">
+              <div class="pill">Compact</div>
+              <button class="btn-ghost" id="btnToggleCompact">${state.compact ? "Выключить" : "Включить"}</button>
+            </div>
             <button class="btn-ghost" id="btnProfileRefresh">Обновить</button>
           </div>
           ${errLine}
@@ -1325,6 +1877,11 @@
         // ✅ NEW кнопки
         document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
         document.getElementById("btnResetSpace").onclick = resetSpaceFrontend;
+        document.getElementById("btnToggleCompact").onclick = ()=>{
+          state.compact = !state.compact;
+          applyCompactMode();
+          render();
+        };
 
         return;
       }
@@ -1374,6 +1931,16 @@
         state.screen = "create";
         render();
       };
+      document.getElementById("tabNutrition").onclick = async ()=>{
+        state.screen = "nutrition";
+        await ensureNutritionData();
+        render();
+      };
+      document.getElementById("tabTraining").onclick = async ()=>{
+        state.screen = "training";
+        await ensureTrainingData();
+        render();
+      };
       document.getElementById("tabProfile").onclick = ()=>{
         state.screen = "profile";
         render();
@@ -1389,15 +1956,16 @@
 
     function escapeHtml(s) {
       return String(s)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     async function init(){
       state.error = null;
+      applyCompactMode();
       wireGlobal();
       await loadMe();
       if(realPaired()){

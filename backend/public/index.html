@@ -767,6 +767,11 @@
       } else {
         const foodId = await createFoodFromEntry();
         payload.foodId = Number(foodId);
+        payload.name = f.name.trim();
+        payload.kcal = Number(f.kcal);
+        payload.protein = Number(f.protein);
+        payload.fat = Number(f.fat);
+        payload.carbs = Number(f.carbs);
       }
       const res = await apiFetch("/api/nutrition/entry", {
         method:"POST",
@@ -1648,6 +1653,22 @@
             ${entriesHtml}
           </div>
 
+          <div class="card">
+            <h2>Каталог блюд</h2>
+            <div class="muted" style="margin-bottom:10px;">Значения указываются на базовую граммовку (по умолчанию 100г).</div>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="foodName" placeholder="Название" value="${escapeHtml(state.nutrition.foodForm.name)}" />
+              <input id="foodBase" placeholder="База (г)" value="${escapeHtml(state.nutrition.foodForm.baseGrams)}" />
+            </div>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="foodKcal" placeholder="Kcal" value="${escapeHtml(state.nutrition.foodForm.kcal)}" />
+              <input id="foodProtein" placeholder="Белки" value="${escapeHtml(state.nutrition.foodForm.protein)}" />
+              <input id="foodFat" placeholder="Жиры" value="${escapeHtml(state.nutrition.foodForm.fat)}" />
+              <input id="foodCarbs" placeholder="Углеводы" value="${escapeHtml(state.nutrition.foodForm.carbs)}" />
+            </div>
+            <button class="btn-pink" id="btnCreateFood">Сохранить блюдо</button>
+          </div>
+
           ${errLine}
         `;
 
@@ -1761,6 +1782,10 @@
                 <input id="setExerciseCategory" placeholder="Категория" value="${escapeHtml(state.training.setForm.category)}" />
               </div>
             </div>
+                <option value="">Выбрать упражнение</option>
+                ${exOptions}
+              </select>
+            </div>
             <div class="row" style="margin-bottom:10px;">
               <input id="setWeight" placeholder="Вес (кг)" value="${escapeHtml(state.training.setForm.weight)}" />
               <input id="setReps" placeholder="Повторы" value="${escapeHtml(state.training.setForm.reps)}" />
@@ -1792,6 +1817,7 @@
           document.getElementById("setExerciseName").oninput = (e)=> state.training.setForm.exerciseName = e.target.value;
           document.getElementById("setExerciseCategory").oninput = (e)=> state.training.setForm.category = e.target.value;
         }
+        setExercise.onchange = (e)=> state.training.setForm.exerciseId = e.target.value;
         document.getElementById("setWeight").oninput = (e)=> state.training.setForm.weight = e.target.value;
         document.getElementById("setReps").oninput = (e)=> state.training.setForm.reps = e.target.value;
         document.getElementById("btnAddSet").onclick = async ()=>{

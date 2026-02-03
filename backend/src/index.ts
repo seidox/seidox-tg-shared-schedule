@@ -9,6 +9,9 @@ import path from "path";
 import { dayRouter } from "./routes/day";
 import { seriesRouter } from "./routes/series";
 import { notesRouter } from "./routes/notes";
+import { nutritionRouter } from "./routes/nutrition";
+import { trainingRouter } from "./routes/training";
+import { statsRouter } from "./routes/stats";
 
 
 dotenv.config();
@@ -70,6 +73,9 @@ app.use("/api/space", spaceRouter);
 app.use("/api", dayRouter);
 app.use("/api/series", seriesRouter);
 app.use("/api/note", notesRouter);
+app.use("/api/nutrition", nutritionRouter);
+app.use("/api/training", trainingRouter);
+app.use("/api/stats", statsRouter);
 
 app.listen(port, () => {
   console.log(`Backend listening on http://localhost:${port}`);

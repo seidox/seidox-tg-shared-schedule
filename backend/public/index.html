@@ -1615,6 +1615,11 @@
             </div>
             <div class="row">
               <input id="waterInput" placeholder="Вода (мл)" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? ""))}" />
+              <input id="weightInput" placeholder="Вес (кг)" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? \"\"))}" />
+              <button class="btn-ghost" id="btnSaveWeight">Сохранить вес</button>
+            </div>
+            <div class="row">
+              <input id="waterInput" placeholder="Вода (мл)" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? \"\"))}" />
               <button class="btn-ghost" id="btnSaveWater">Сохранить воду</button>
             </div>
           </div>

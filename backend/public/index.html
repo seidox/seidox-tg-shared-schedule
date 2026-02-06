@@ -76,11 +76,6 @@
       box-shadow:0 0 0 4px rgba(255,45,134,.15);
       flex: 0 0 auto;
     }
-    .badge{
-      font-size:12px; padding:4px 8px; border:1px solid var(--border);
-      border-radius:999px; background:rgba(255,255,255,.03); color:var(--muted);
-      flex: 0 0 auto;
-    }
     .pill{
       display:inline-flex; align-items:center; gap:8px;
       padding:6px 10px; border-radius:999px; border:1px solid var(--border);
@@ -90,6 +85,30 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .headerDate{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      font-weight:900;
+      font-size:28px;
+      margin:0 0 8px;
+    }
+    .headerDate .dow{ color:var(--pink2); }
+    .dateRow{ display:flex; gap:8px; flex-wrap:wrap; }
+    .dateRow > *{ flex:1 1 120px; min-width:0; }
+    .miniBtn{ width:auto; min-width:34px; padding:8px 10px; font-size:14px; border-radius:10px; }
+    .logItem{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+    .logItem:last-child{ border-bottom:none; }
+    .iconBtns{ display:flex; gap:6px; }
+    .nutriProgress{ display:grid; gap:10px; }
+    .meter{ display:grid; gap:6px; }
+    .meterTop{ display:flex; justify-content:space-between; font-size:13px; color:var(--muted); }
+    .meterBar{ height:9px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; }
+    .meterBar > span{ display:block; height:100%; border-radius:999px; }
+    .inlineActions{ display:flex; gap:8px; flex:0 0 auto; }
+    .summaryGrid{ display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:8px; }
+    .small{ font-size:13px; }
     .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
 
     .content{
@@ -433,6 +452,8 @@
       .tabbtn{ min-width:96px; padding:12px 8px; font-size:13px; }
       .card{ border-radius:14px; padding:12px; }
       .row{ gap:8px; }
+      .headerDate{ font-size:24px; }
+      .summaryGrid{ grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -443,9 +464,7 @@
       <div class="brand">
         <span class="dot"></span>
         <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Shared Schedule</span>
-        <span class="badge">private ×2</span>
       </div>
-      <div class="pill" id="statusPill"><span class="mono">…</span></div>
     </div>
 
     <div class="content">
@@ -473,8 +492,28 @@
         <div id="eventMeta" class="muted" style="margin-bottom:10px;"></div>
 
         <div class="row" style="margin-bottom:10px;">
+          <button class="btn-ghost" id="btnEditSeries">Редактировать событие</button>
           <button class="btn-ghost" id="btnAddEventNote">Добавить заметку к событию</button>
           <button class="btn-danger" id="btnDeleteSeries">Удалить событие</button>
+        </div>
+
+        <div id="editEventBox" class="hidden" style="margin-bottom:10px;">
+          <div class="row" style="margin-bottom:8px;">
+            <input id="editTitle" placeholder="Название" />
+            <select id="editTimeKind">
+              <option value="exact">Exact</option>
+              <option value="approx">Approx</option>
+              <option value="anytime">Anytime</option>
+            </select>
+          </div>
+          <div class="row" style="margin-bottom:8px;">
+            <input id="editStart" placeholder="Начало (HH:MM)" />
+            <input id="editEnd" placeholder="Конец (HH:MM)" />
+          </div>
+          <div class="row" style="margin-bottom:8px;">
+            <select id="editColor"></select>
+            <button class="btn-pink" id="btnSaveSeriesEdit">Сохранить</button>
+          </div>
         </div>
 
         <div id="addEventNoteBox" class="hidden">
@@ -550,7 +589,7 @@
         end: "18:00",
         recurrence: "none",
         singleDate: todayISO(),
-        cyclePattern: "1100",
+        everyXDays: "4",
         cycleAnchor: todayISO(),
         color: "c1"
       },
@@ -568,13 +607,18 @@
         entries: [],
         totals: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
         stats: { weightKg: null, waterMl: null },
-        entryForm: { foodId: "custom", name: "", grams: "100", kcal: "", protein: "", fat: "", carbs: "" },
+        goals: JSON.parse(localStorage.getItem("nutritionGoals") || '{"kcal":2000,"protein":140,"fat":70,"carbs":220}'),
+        weightLocked: false,
+        waterLocked: false,
+        showAddForm: false,
+        entryForm: { foodId: "custom", name: "", grams: "", kcal: "", protein: "", fat: "", carbs: "" },
       },
 
       training: {
         date: todayISO(),
         exercises: [],
         dayItems: [],
+        showAddForm: true,
         exerciseForm: { name: "", category: "" },
         setForm: { exerciseId: "", exerciseName: "", category: "", weight: "", reps: "", setsCount: "1" },
         history: {}
@@ -599,9 +643,7 @@
       return fetch(path, Object.assign({}, options, { headers }));
     }
 
-    function setPill(text){
-      document.getElementById("statusPill").innerHTML = `<span class="mono">${escapeHtml(text)}</span>`;
-    }
+    function setPill(_text){}
 
     function todayISO(){
       const d = new Date();
@@ -614,8 +656,17 @@
     }
     function fmtDow(dateISO){
       const d = new Date(dateISO + "T00:00:00");
-      const days = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+      const days = ["ВС","ПН","ВТ","СР","ЧТ","ПТ","СБ"];
       return days[d.getDay()];
+    }
+    function fmtRuDate(dateISO){
+      const d = new Date(dateISO + "T00:00:00");
+      return d.toLocaleDateString("ru-RU", { day:"numeric", month:"short", year:"numeric" }).replace(" г.", "");
+    }
+    function calcPercent(value, goal){
+      const g = Number(goal || 0);
+      if(g <= 0) return 0;
+      return Math.max(0, Math.min(100, (Number(value || 0) / g) * 100));
     }
 
     function hmToMin(hm){
@@ -740,6 +791,8 @@
         weightKg: data.weightKg ?? null,
         waterMl: data.waterMl ?? null
       };
+      state.nutrition.weightLocked = data.weightKg !== null && data.weightKg !== undefined;
+      state.nutrition.waterLocked = data.waterMl !== null && data.waterMl !== undefined;
     }
 
     async function ensureNutritionData(){
@@ -822,6 +875,7 @@
       const data = await res.json();
       if(!res.ok) throw new Error(data.error || "weight_failed");
       await loadStatsDay();
+      state.nutrition.weightLocked = true;
       render();
     }
 
@@ -834,6 +888,12 @@
       const data = await res.json();
       if(!res.ok) throw new Error(data.error || "water_failed");
       await loadStatsDay();
+      state.nutrition.waterLocked = true;
+      render();
+    }
+
+    function saveNutritionGoals(){
+      localStorage.setItem("nutritionGoals", JSON.stringify(state.nutrition.goals));
       render();
     }
 
@@ -997,7 +1057,7 @@
               <div class="avatar">${escapeHtml(label.slice(0,1).toUpperCase())}</div>
               <div class="names">
                 <div class="t">${escapeHtml(label)}</div>
-                <small class="mono">${escapeHtml(String(userId || "—"))}</small>
+                
               </div>
             </div>
             <span class="pill">${escapeHtml(String(evs.length))} events</span>
@@ -1067,16 +1127,28 @@
     function openEventDetails(ev){
       state.selectedEvent = ev;
       document.getElementById("eventTitle").textContent = ev.title;
+      const owner = String(ev.ownerTgUserId) === String(myId()) ? "you" : "partner";
       document.getElementById("eventMeta").innerHTML = `
-        <div class="pill">Дата: <span class="mono">${escapeHtml(state.date)}</span></div>
+        <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.date))}</span><span class="dow">${escapeHtml(fmtDow(state.date))}</span></div>
         <div class="pill">Время: <span class="mono">${escapeHtml(makeTimeLabel(ev))}</span></div>
-        <div class="pill">Owner: <span class="mono">${escapeHtml(String(ev.ownerTgUserId))}</span></div>
-        <div class="pill">SeriesId: <span class="mono">${escapeHtml(String(ev.seriesId))}</span></div>
+        <div class="pill">Owner: <span class="mono">${escapeHtml(owner)}</span></div>
       `;
+
+      const editBox = document.getElementById("editEventBox");
+      editBox.classList.add("hidden");
+      document.getElementById("editTitle").value = ev.title || "";
+      document.getElementById("editTimeKind").value = ev.timeKind || "exact";
+      document.getElementById("editStart").value = minToHm(ev.startMin);
+      document.getElementById("editEnd").value = minToHm(ev.endMin);
+      document.getElementById("editStart").disabled = ev.timeKind === "anytime";
+      document.getElementById("editEnd").disabled = ev.timeKind === "anytime";
+      const colorSel = document.getElementById("editColor");
+      colorSel.innerHTML = COLORS.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.id)}</option>`).join("");
+      colorSel.value = ev.color || "c1";
 
       const notes = (state.dayData?.notes||[]).filter(n => Number(n.seriesId) === Number(ev.seriesId));
       const list = notes.map(n=>{
-        const who = String(n.authorTgUserId)===String(myId()) ? "you" : "other";
+        const who = String(n.authorTgUserId)===String(myId()) ? "you" : "partner";
         return `<div class="pill" style="margin:8px 0;">
           <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
           <b>${escapeHtml(who)}</b>: ${escapeHtml(n.text)}
@@ -1085,11 +1157,14 @@
       document.getElementById("eventNotesList").innerHTML = list || `<div class="muted">Пока нет.</div>`;
 
       const delBtn = document.getElementById("btnDeleteSeries");
+      const editBtn = document.getElementById("btnEditSeries");
       if(String(ev.ownerTgUserId) !== String(myId())){
         delBtn.disabled = true;
+        editBtn.disabled = true;
         delBtn.textContent = "Удалить (только владелец)";
       } else {
         delBtn.disabled = false;
+        editBtn.disabled = false;
         delBtn.textContent = "Удалить событие";
       }
 
@@ -1128,6 +1203,41 @@
         closeEventModal();
         await loadDay(true);
         toast("Удалено");
+      }catch(e){
+        toast("Ошибка: "+e.message);
+      }
+    }
+
+    async function saveSeriesEdit(){
+      const ev = state.selectedEvent;
+      if(!ev) return;
+      if(String(ev.ownerTgUserId) !== String(myId())) return;
+      const title = document.getElementById("editTitle").value.trim();
+      const timeKind = document.getElementById("editTimeKind").value;
+      const start = document.getElementById("editStart").value;
+      const end = document.getElementById("editEnd").value;
+      const color = document.getElementById("editColor").value;
+      let startMin = null;
+      let endMin = null;
+      if(timeKind !== "anytime"){
+        startMin = hmToMin(start);
+        endMin = hmToMin(end);
+        if(startMin === null || endMin === null || startMin >= endMin){
+          toast("Проверь время");
+          return;
+        }
+      }
+      try{
+        const res = await apiFetch("/api/series/"+ev.seriesId, {
+          method:"PUT",
+          body: JSON.stringify({ title, color, timeKind, startMin, endMin })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "edit_failed");
+        document.getElementById("editEventBox").classList.add("hidden");
+        await loadDay(true);
+        closeEventModal();
+        toast("Сохранено");
       }catch(e){
         toast("Ошибка: "+e.message);
       }
@@ -1186,7 +1296,7 @@
       const end = document.getElementById("fEnd");
       const rec = document.getElementById("fRecurrence");
       const single = document.getElementById("fSingleDate");
-      const cycP = document.getElementById("fCyclePattern");
+      const cycP = document.getElementById("fEveryXDays");
       const cycA = document.getElementById("fCycleAnchor");
 
       title.value = state.form.title;
@@ -1195,7 +1305,7 @@
       end.value = state.form.end;
       rec.value = state.form.recurrence;
       single.value = state.form.singleDate;
-      cycP.value = state.form.cyclePattern;
+      cycP.value = state.form.everyXDays;
       cycA.value = state.form.cycleAnchor;
 
       title.oninput = (e)=> state.form.title = e.target.value;
@@ -1204,7 +1314,7 @@
       end.oninput = (e)=> state.form.end = e.target.value;
       rec.onchange = (e)=>{ state.form.recurrence = e.target.value; syncRecurrenceUI(); };
       single.oninput = (e)=> state.form.singleDate = e.target.value;
-      cycP.oninput = (e)=> state.form.cyclePattern = e.target.value;
+      cycP.oninput = (e)=> state.form.everyXDays = e.target.value;
       cycA.oninput = (e)=> state.form.cycleAnchor = e.target.value;
 
       buildColorRow();
@@ -1256,11 +1366,11 @@
         if(state.weeklyMask === 0){ toast("Выбери дни"); return; }
         body.weeklyMask = state.weeklyMask;
       } else if(recurrence === "cycle"){
-        const p = state.form.cyclePattern.trim();
+        const every = Number(state.form.everyXDays || 0);
         const a = state.form.cycleAnchor.trim();
-        if(!/^[01]{2,31}$/.test(p)){ toast("Pattern 0/1 (2..31)"); return; }
+        if(!Number.isInteger(every) || every < 2 || every > 31){ toast("X должен быть от 2 до 31"); return; }
         if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){ toast("Anchor YYYY-MM-DD"); return; }
-        body.cyclePattern = p;
+        body.cyclePattern = "1" + "0".repeat(every - 1);
         body.cycleAnchorDate = a;
       }
 
@@ -1415,28 +1525,16 @@
 
         root.innerHTML = `
           <div class="card">
-            <div class="row" style="align-items:flex-start;">
-              <div>
-                <h2>Schedule</h2>
-                <div class="muted">
-                  <span class="pill">Дата: <span class="mono">${escapeHtml(state.date)}</span></span>
-                  <span class="pill">День: <span class="mono">${escapeHtml(fmtDow(state.date))}</span></span>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
-              </div>
-            </div>
+            <h2>Schedule</h2>
+            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.date))}</span><span class="dow">${escapeHtml(fmtDow(state.date))}</span></div>
 
-            <div class="divider"></div>
-
-            <div class="row">
+            <div class="dateRow" style="margin-top:10px;">
               <button class="btn-ghost" id="btnPrev">←</button>
               <button class="btn-ghost" id="btnToday">Сегодня</button>
               <button class="btn-ghost" id="btnNext">→</button>
             </div>
 
-            <div class="row" style="margin-top:10px;">
+            <div class="dateRow" style="margin-top:8px;">
               <button class="btn-ghost" id="btnTomorrow">Завтра</button>
               <input id="datePick" type="date" value="${escapeHtml(state.date)}" />
               <button class="btn-ghost" id="btnRefreshDay">Обновить</button>
@@ -1455,7 +1553,7 @@
               <div class="noteItem">
                 <div class="noteMeta">
                   <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
-                  <span class="mono">${escapeHtml(String(n.authorTgUserId))}</span>
+                  <span class="mono">${escapeHtml(String(n.authorTgUserId)===String(myId())?"you":"partner")}</span>
                 </div>
                 <div>${escapeHtml(n.text)}</div>
               </div>
@@ -1513,7 +1611,7 @@
                 <select id="fRecurrence">
                   <option value="none">Single date</option>
                   <option value="weekly">Weekly</option>
-                  <option value="cycle">Cycle (2/2)</option>
+                  <option value="cycle">Раз в X дней</option>
                 </select>
                 <input id="fSingleDate" placeholder="Дата (YYYY-MM-DD)" />
               </div>
@@ -1532,12 +1630,12 @@
               </div>
 
               <div id="cycleBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
-                <div class="muted" style="margin-bottom:8px;">Cycle pattern:</div>
+                <div class="muted" style="margin-bottom:8px;">Повторять раз в X дней:</div>
                 <div class="row" style="margin-bottom:10px;">
-                  <input id="fCyclePattern" placeholder="Pattern (например 1100)" />
+                  <input id="fEveryXDays" placeholder="Например: 4" />
                   <input id="fCycleAnchor" placeholder="Anchor date (YYYY-MM-DD)" />
                 </div>
-                <div class="muted">“1100” = работа 2 дня, выходной 2 дня.</div>
+                <div class="muted">Если X=4, событие будет каждые 4 дня от даты старта.</div>
               </div>
 
               <div class="muted" style="margin:10px 0 8px 0;">Цвет:</div>
@@ -1583,81 +1681,103 @@
 
         const foods = state.nutrition.foods || [];
         const entryForm = state.nutrition.entryForm;
-        const foodOptions = foods.map(f=>{
-          const base = f.base_grams || 100;
-          return `<option value="${escapeHtml(String(f.id))}">${escapeHtml(f.name)} (${escapeHtml(String(f.kcal))} kcal / ${escapeHtml(String(base))}g)</option>`;
-        }).join("");
+        const goals = state.nutrition.goals;
+        const foodOptions = foods.map(f=>`<option value="${escapeHtml(String(f.id))}">${escapeHtml(f.name)}</option>`).join("");
+
+        const metrics = [
+          { key:"kcal", label:"Калории", color:"#ff2d86", unit:"kcal" },
+          { key:"protein", label:"Белки", color:"#38bdf8", unit:"г" },
+          { key:"fat", label:"Жиры", color:"#f97316", unit:"г" },
+          { key:"carbs", label:"Углеводы", color:"#22c55e", unit:"г" }
+        ];
+        const progressHtml = metrics.map(m=>`
+          <div class="meter">
+            <div class="meterTop"><b>${escapeHtml(m.label)}</b><span>${escapeHtml(fmtNum(state.nutrition.totals[m.key]))} / ${escapeHtml(fmtNum(goals[m.key] || 0))} ${escapeHtml(m.unit)}</span></div>
+            <div class="meterBar"><span style="width:${calcPercent(state.nutrition.totals[m.key], goals[m.key])}%; background:${m.color};"></span></div>
+          </div>
+        `).join("");
 
         const entriesHtml = (state.nutrition.entries || []).map(e=>`
-          <div class="card" style="margin-bottom:10px;">
-            <div class="row" style="margin-bottom:8px;">
-              <div>
-                <b>${escapeHtml(e.name)}</b>
-                <div class="muted">${escapeHtml(fmtNum(e.kcal))} kcal • B ${escapeHtml(fmtNum(e.protein))} / Ж ${escapeHtml(fmtNum(e.fat))} / У ${escapeHtml(fmtNum(e.carbs))}</div>
-              </div>
-              <button class="btn-ghost" data-del-entry="${escapeHtml(String(e.id))}">Удалить</button>
+          <div class="logItem">
+            <div style="min-width:0;">
+              <div><b>${escapeHtml(e.name)}</b></div>
+              <div class="muted">${escapeHtml(fmtNum(e.kcal))} kcal • Б ${escapeHtml(fmtNum(e.protein))} / Ж ${escapeHtml(fmtNum(e.fat))} / У ${escapeHtml(fmtNum(e.carbs))}</div>
+              <div class="muted small">${escapeHtml(String(e.grams))} г</div>
             </div>
+            <div class="iconBtns">
+              <button class="btn-ghost miniBtn" data-edit-entry="${escapeHtml(String(e.id))}">✎</button>
+              <button class="btn-danger miniBtn" data-del-entry="${escapeHtml(String(e.id))}">✕</button>
+            </div>
+          </div>
+          <div class="hidden" id="edit-entry-box-${escapeHtml(String(e.id))}" style="margin-bottom:10px;">
             <div class="row">
-              <input id="entryGrams-${escapeHtml(String(e.id))}" value="${escapeHtml(String(e.grams))}" />
-              <button class="btn-ghost" data-update-entry="${escapeHtml(String(e.id))}">Обновить граммы</button>
+              <input id="entryGrams-${escapeHtml(String(e.id))}" placeholder="Новые граммы" value="${escapeHtml(String(e.grams))}" />
+              <button class="btn-ghost" data-update-entry="${escapeHtml(String(e.id))}">Сохранить</button>
             </div>
           </div>
         `).join("") || `<div class="muted">Пока нет записей за этот день.</div>`;
 
         root.innerHTML = `
           <div class="card">
-            <div class="row" style="align-items:flex-start;">
-              <div>
-                <h2>Nutrition</h2>
-                <div class="muted">Дневной лог питания (значения на 100г).</div>
-              </div>
-              <div style="text-align:right;">
-                <input id="nutritionDate" type="date" value="${escapeHtml(state.nutrition.date)}" />
-              </div>
-            </div>
+            <h2>Nutrition</h2>
+            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.nutrition.date))}</span><span class="dow">${escapeHtml(fmtDow(state.nutrition.date))}</span></div>
+            <div class="dateRow"><input id="nutritionDate" type="date" value="${escapeHtml(state.nutrition.date)}" /></div>
             <div class="divider"></div>
-            <div class="row">
-              <div class="pill">Kcal: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.kcal))}</span></div>
-              <div class="pill">B: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.protein))}</span></div>
-              <div class="pill">Ж: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.fat))}</span></div>
-              <div class="pill">У: <span class="mono">${escapeHtml(fmtNum(state.nutrition.totals.carbs))}</span></div>
-            </div>
+            <div class="nutriProgress">${progressHtml}</div>
           </div>
 
           <div class="card">
             <h2>Вес и вода</h2>
-            <div class="row" style="margin-bottom:10px;">
-              <input id="weightInput" placeholder="Вес (кг)" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? ""))}" />
-              <button class="btn-ghost" id="btnSaveWeight">Сохранить вес</button>
-            </div>
-            <div class="row">
-              <input id="waterInput" placeholder="Вода (мл)" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? ""))}" />
-              <button class="btn-ghost" id="btnSaveWater">Сохранить воду</button>
+            <div class="summaryGrid">
+              <div>
+                <div class="muted">Вес (кг)</div>
+                <div class="row" style="margin-top:6px;">
+                  <input id="weightInput" placeholder="Например 69.5" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? ""))}" ${state.nutrition.weightLocked ? "disabled" : ""} />
+                  <div class="inlineActions">
+                    <button class="btn-ghost" id="btnToggleWeightEdit">${state.nutrition.weightLocked ? "Ред." : "Блок"}</button>
+                    <button class="btn-pink" id="btnSaveWeight">Сохранить</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="muted">Вода (мл)</div>
+                <div class="row" style="margin-top:6px;">
+                  <input id="waterInput" placeholder="Например 2000" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? ""))}" ${state.nutrition.waterLocked ? "disabled" : ""} />
+                  <div class="inlineActions">
+                    <button class="btn-ghost" id="btnToggleWaterEdit">${state.nutrition.waterLocked ? "Ред." : "Блок"}</button>
+                    <button class="btn-pink" id="btnSaveWater">Сохранить</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="card">
-            <h2>Добавить позицию</h2>
-            <div class="row" style="margin-bottom:10px;">
-              <select id="entryFoodSelect">
-                <option value="custom">Custom</option>
+            <div class="row">
+              <h2 style="margin:0;">Добавление пищи</h2>
+              <button class="btn-pink" id="btnToggleAddEntry">${state.nutrition.showAddForm ? "Скрыть" : "Добавить"}</button>
+            </div>
+            <div id="addEntryPanel" class="${state.nutrition.showAddForm ? "" : "hidden"}" style="margin-top:10px;">
+              <select id="entryFoodSelect" style="margin-bottom:10px;">
+                <option value="custom">Новая пища</option>
                 ${foodOptions}
               </select>
-              <input id="entryGrams" placeholder="Граммы" value="${escapeHtml(entryForm.grams)}" />
-            </div>
-            <div id="customEntryBox" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
-              <div class="row" style="margin-bottom:10px;">
-                <input id="entryName" placeholder="Название" value="${escapeHtml(entryForm.name)}" />
-                <input id="entryKcal" placeholder="Kcal/100g" value="${escapeHtml(entryForm.kcal)}" />
+              <div id="customEntryBox" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
+                <input id="entryName" placeholder="Название новой пищи" value="${escapeHtml(entryForm.name)}" style="margin-bottom:10px;" />
               </div>
-              <div class="row">
-                <input id="entryProtein" placeholder="Белки/100g" value="${escapeHtml(entryForm.protein)}" />
-                <input id="entryFat" placeholder="Жиры/100g" value="${escapeHtml(entryForm.fat)}" />
-                <input id="entryCarbs" placeholder="Углеводы/100g" value="${escapeHtml(entryForm.carbs)}" />
+              <input id="entryGrams" placeholder="Граммовка" value="${escapeHtml(entryForm.grams)}" style="margin-bottom:10px;" />
+              <div id="customNutritionMacros" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
+                <div class="row" style="margin-bottom:10px;">
+                  <input id="entryKcal" placeholder="Ккал/100г" value="${escapeHtml(entryForm.kcal)}" />
+                  <input id="entryProtein" placeholder="Б/100г" value="${escapeHtml(entryForm.protein)}" />
+                </div>
+                <div class="row" style="margin-bottom:10px;">
+                  <input id="entryFat" placeholder="Ж/100г" value="${escapeHtml(entryForm.fat)}" />
+                  <input id="entryCarbs" placeholder="У/100г" value="${escapeHtml(entryForm.carbs)}" />
+                </div>
               </div>
+              <button class="btn-pink" id="btnAddEntry">Добавить</button>
             </div>
-            <div class="divider"></div>
-            <button class="btn-pink" id="btnAddEntry">Добавить</button>
           </div>
 
           <div class="card">
@@ -1674,20 +1794,15 @@
           await loadStatsDay();
           render();
         };
-
-        document.getElementById("btnSaveWeight").onclick = async ()=>{
-          try { await saveWeight(); } catch(e){ toast(e.message); }
-        };
-        document.getElementById("btnSaveWater").onclick = async ()=>{
-          try { await saveWater(); } catch(e){ toast(e.message); }
-        };
+        document.getElementById("btnToggleWeightEdit").onclick = ()=>{ state.nutrition.weightLocked = !state.nutrition.weightLocked; render(); };
+        document.getElementById("btnToggleWaterEdit").onclick = ()=>{ state.nutrition.waterLocked = !state.nutrition.waterLocked; render(); };
+        document.getElementById("btnSaveWeight").onclick = async ()=>{ try { await saveWeight(); } catch(e){ toast(e.message); } };
+        document.getElementById("btnSaveWater").onclick = async ()=>{ try { await saveWater(); } catch(e){ toast(e.message); } };
 
         const selectFood = document.getElementById("entryFoodSelect");
         selectFood.value = entryForm.foodId;
-        selectFood.onchange = (e)=>{
-          entryForm.foodId = e.target.value;
-          render();
-        };
+        selectFood.onchange = (e)=>{ entryForm.foodId = e.target.value; render(); };
+        document.getElementById("btnToggleAddEntry").onclick = ()=>{ state.nutrition.showAddForm = !state.nutrition.showAddForm; render(); };
         document.getElementById("entryGrams").oninput = (e)=> entryForm.grams = e.target.value;
         if(entryForm.foodId === "custom"){
           document.getElementById("entryName").oninput = (e)=> entryForm.name = e.target.value;
@@ -1696,23 +1811,11 @@
           document.getElementById("entryFat").oninput = (e)=> entryForm.fat = e.target.value;
           document.getElementById("entryCarbs").oninput = (e)=> entryForm.carbs = e.target.value;
         }
+        document.getElementById("btnAddEntry").onclick = async ()=>{ try { await addNutritionEntry(); } catch(e){ toast(e.message); } };
 
-        document.getElementById("btnAddEntry").onclick = async ()=>{
-          try { await addNutritionEntry(); } catch(e){ toast(e.message); }
-        };
-
-        document.querySelectorAll("[data-del-entry]").forEach(btn=>{
-          btn.onclick = async ()=>{
-            try { await deleteEntry(btn.getAttribute("data-del-entry")); } catch(e){ toast(e.message); }
-          };
-        });
-        document.querySelectorAll("[data-update-entry]").forEach(btn=>{
-          btn.onclick = async ()=>{
-            const entryId = btn.getAttribute("data-update-entry");
-            const input = document.getElementById(`entryGrams-${entryId}`);
-            try { await updateEntryGrams(entryId, input.value); } catch(e){ toast(e.message); }
-          };
-        });
+        document.querySelectorAll("[data-del-entry]").forEach(btn=>{ btn.onclick = async ()=>{ try { await deleteEntry(btn.getAttribute("data-del-entry")); } catch(e){ toast(e.message); } }; });
+        document.querySelectorAll("[data-edit-entry]").forEach(btn=>{ btn.onclick = ()=>{ const id = btn.getAttribute("data-edit-entry"); document.getElementById(`edit-entry-box-${id}`).classList.toggle("hidden"); }; });
+        document.querySelectorAll("[data-update-entry]").forEach(btn=>{ btn.onclick = async ()=>{ const entryId = btn.getAttribute("data-update-entry"); const input = document.getElementById(`entryGrams-${entryId}`); try { await updateEntryGrams(entryId, input.value); } catch(e){ toast(e.message); } }; });
 
         return;
       }
@@ -1725,65 +1828,52 @@
         ).join("");
 
         const itemsHtml = (state.training.dayItems || []).map(item=>{
-          const sets = item.sets.map(s=>`
-            <div class="pill" style="margin:6px 0;">
-              <span class="mono">${escapeHtml(String(s.weight))} кг × ${escapeHtml(String(s.reps))}</span>
-            </div>
-          `).join("") || `<div class="muted">Нет сетов</div>`;
-
+          const setsCount = item.sets.length;
+          const first = item.sets[0];
+          const summary = first ? `${escapeHtml(String(first.weight))} кг × ${escapeHtml(String(first.reps))}` : "—";
           const history = state.training.history[item.exerciseId] || [];
-          const historyHtml = history.length ? history.map(h=>`
-            <div class="muted">${escapeHtml(h.date)} • ${escapeHtml(String(h.weight))}кг × ${escapeHtml(String(h.reps))}</div>
-          `).join("") : "";
-
+          const historyHtml = history.length ? history.map(h=>`<div class="muted">${escapeHtml(h.date)} • ${escapeHtml(String(h.weight))}кг × ${escapeHtml(String(h.reps))}</div>`).join("") : "";
           return `
-            <div class="card" style="margin-bottom:10px;">
-              <div class="row" style="margin-bottom:8px;">
-                <div>
-                  <b>${escapeHtml(item.name)}</b>
-                  ${item.category ? `<div class="muted">${escapeHtml(item.category)}</div>` : ""}
-                </div>
-                <button class="btn-ghost" data-history="${escapeHtml(String(item.exerciseId))}">История</button>
+            <div class="logItem">
+              <div style="min-width:0;">
+                <div><b>${escapeHtml(item.name)}</b></div>
+                ${item.category ? `<div class="muted">${escapeHtml(item.category)}</div>` : ""}
+                <div class="muted">Подходов: ${escapeHtml(String(setsCount))} • ${summary}</div>
+                ${historyHtml ? `<div style="margin-top:8px;">${historyHtml}</div>` : ""}
               </div>
-              ${sets}
-              ${historyHtml ? `<div class="divider"></div>${historyHtml}` : ""}
+              <button class="btn-ghost miniBtn" data-history="${escapeHtml(String(item.exerciseId))}">↺</button>
             </div>
           `;
         }).join("") || `<div class="muted">Пока нет тренировок за этот день.</div>`;
 
         root.innerHTML = `
           <div class="card">
-            <div class="row" style="align-items:flex-start;">
-              <div>
-                <h2>Training</h2>
-                <div class="muted">Силовые сеты по дате.</div>
-              </div>
-              <div style="text-align:right;">
-                <input id="trainingDate" type="date" value="${escapeHtml(state.training.date)}" />
-              </div>
-            </div>
+            <h2>Training</h2>
+            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.training.date))}</span><span class="dow">${escapeHtml(fmtDow(state.training.date))}</span></div>
+            <div class="dateRow"><input id="trainingDate" type="date" value="${escapeHtml(state.training.date)}" /></div>
           </div>
 
           <div class="card">
-            <h2>Добавить сет</h2>
-            <div class="row" style="margin-bottom:10px;">
-              <select id="setExercise">
+            <div class="row">
+              <h2 style="margin:0;">Добавить сет</h2>
+              <button class="btn-pink" id="btnToggleTrainingAdd">${state.training.showAddForm ? "Скрыть" : "Добавить"}</button>
+            </div>
+            <div id="trainingAddPanel" class="${state.training.showAddForm ? "" : "hidden"}" style="margin-top:10px;">
+              <select id="setExercise" style="margin-bottom:10px;">
                 <option value="">Новое упражнение</option>
                 ${exOptions}
               </select>
-            </div>
-            <div id="newExerciseBox" class="${state.training.setForm.exerciseId ? "hidden" : ""}">
-              <div class="row" style="margin-bottom:10px;">
-                <input id="setExerciseName" placeholder="Название упражнения" value="${escapeHtml(state.training.setForm.exerciseName)}" />
-                <input id="setExerciseCategory" placeholder="Категория" value="${escapeHtml(state.training.setForm.category)}" />
+              <div id="newExerciseBox" class="${state.training.setForm.exerciseId ? "hidden" : ""}">
+                <input id="setExerciseName" placeholder="Название упражнения" value="${escapeHtml(state.training.setForm.exerciseName)}" style="margin-bottom:10px;" />
+                <input id="setExerciseCategory" placeholder="Категория" value="${escapeHtml(state.training.setForm.category)}" style="margin-bottom:10px;" />
               </div>
+              <div class="row" style="margin-bottom:10px;">
+                <input id="setWeight" placeholder="Вес (кг)" value="${escapeHtml(state.training.setForm.weight)}" />
+                <input id="setReps" placeholder="Повторы" value="${escapeHtml(state.training.setForm.reps)}" />
+                <input id="setCount" placeholder="Подходы" value="${escapeHtml(state.training.setForm.setsCount || "1")}" />
+              </div>
+              <button class="btn-pink" id="btnAddSet">Добавить</button>
             </div>
-            <div class="row" style="margin-bottom:10px;">
-              <input id="setWeight" placeholder="Вес (кг)" value="${escapeHtml(state.training.setForm.weight)}" />
-              <input id="setReps" placeholder="Повторы" value="${escapeHtml(state.training.setForm.reps)}" />
-              <input id="setCount" placeholder="Подходы" value="${escapeHtml(state.training.setForm.setsCount || "1")}" />
-            </div>
-            <button class="btn-pink" id="btnAddSet">Добавить сет</button>
           </div>
 
           <div class="card">
@@ -1794,18 +1884,11 @@
           ${errLine}
         `;
 
-        document.getElementById("trainingDate").onchange = async (e)=>{
-          state.training.date = e.target.value;
-          await loadTrainingDay();
-          render();
-        };
-
+        document.getElementById("trainingDate").onchange = async (e)=>{ state.training.date = e.target.value; await loadTrainingDay(); render(); };
+        document.getElementById("btnToggleTrainingAdd").onclick = ()=>{ state.training.showAddForm = !state.training.showAddForm; render(); };
         const setExercise = document.getElementById("setExercise");
         setExercise.value = state.training.setForm.exerciseId;
-        setExercise.onchange = (e)=>{
-          state.training.setForm.exerciseId = e.target.value;
-          render();
-        };
+        setExercise.onchange = (e)=>{ state.training.setForm.exerciseId = e.target.value; render(); };
         if(!state.training.setForm.exerciseId){
           document.getElementById("setExerciseName").oninput = (e)=> state.training.setForm.exerciseName = e.target.value;
           document.getElementById("setExerciseCategory").oninput = (e)=> state.training.setForm.category = e.target.value;
@@ -1813,15 +1896,8 @@
         document.getElementById("setWeight").oninput = (e)=> state.training.setForm.weight = e.target.value;
         document.getElementById("setReps").oninput = (e)=> state.training.setForm.reps = e.target.value;
         document.getElementById("setCount").oninput = (e)=> state.training.setForm.setsCount = e.target.value;
-        document.getElementById("btnAddSet").onclick = async ()=>{
-          try { await addWorkoutSet(); } catch(e){ toast(e.message); }
-        };
-
-        document.querySelectorAll("[data-history]").forEach(btn=>{
-          btn.onclick = async ()=>{
-            try { await loadExerciseHistory(btn.getAttribute("data-history")); } catch(e){ toast(e.message); }
-          };
-        });
+        document.getElementById("btnAddSet").onclick = async ()=>{ try { await addWorkoutSet(); } catch(e){ toast(e.message); } };
+        document.querySelectorAll("[data-history]").forEach(btn=>{ btn.onclick = async ()=>{ try { await loadExerciseHistory(btn.getAttribute("data-history")); } catch(e){ toast(e.message); } }; });
 
         return;
       }
@@ -1832,18 +1908,27 @@
         root.innerHTML = `
           <div class="card">
             <h2>Profile</h2>
-            <div class="muted">Связь активна, пока есть partner userId.</div>
+            <div class="muted">You / Partner</div>
             <div class="divider"></div>
-            <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
+            <div class="pill">you</div>
             <div style="height:8px;"></div>
-            <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId))}</span></div>
+            <div class="pill">partner</div>
             <div style="height:8px;"></div>
             <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount))}</span></div>
 
             <div class="divider"></div>
+            <h2>Нормы КБЖУ</h2>
+            <div class="summaryGrid" style="margin-bottom:10px;">
+              <input id="goalKcal" placeholder="Ккал" value="${escapeHtml(String(state.nutrition.goals.kcal || ""))}" />
+              <input id="goalProtein" placeholder="Белки" value="${escapeHtml(String(state.nutrition.goals.protein || ""))}" />
+              <input id="goalFat" placeholder="Жиры" value="${escapeHtml(String(state.nutrition.goals.fat || ""))}" />
+              <input id="goalCarbs" placeholder="Углеводы" value="${escapeHtml(String(state.nutrition.goals.carbs || ""))}" />
+            </div>
+            <button class="btn-ghost" id="btnSaveGoals">Сохранить нормы</button>
 
+            <div class="divider"></div>
             <!-- ✅ FIX already_paired -->
             <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
             <div style="height:10px;"></div>
@@ -1865,13 +1950,20 @@
           render();
         };
 
-        // ✅ NEW кнопки
         document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
         document.getElementById("btnResetSpace").onclick = resetSpaceFrontend;
         document.getElementById("btnToggleCompact").onclick = ()=>{
           state.compact = !state.compact;
           applyCompactMode();
           render();
+        };
+        document.getElementById("btnSaveGoals").onclick = ()=>{
+          state.nutrition.goals.kcal = Number(document.getElementById("goalKcal").value || 0);
+          state.nutrition.goals.protein = Number(document.getElementById("goalProtein").value || 0);
+          state.nutrition.goals.fat = Number(document.getElementById("goalFat").value || 0);
+          state.nutrition.goals.carbs = Number(document.getElementById("goalCarbs").value || 0);
+          saveNutritionGoals();
+          toast("Нормы сохранены");
         };
 
         return;
@@ -1949,8 +2041,34 @@
       document.getElementById("btnAddEventNote").onclick = ()=>{
         document.getElementById("addEventNoteBox").classList.toggle("hidden");
       };
+      document.getElementById("btnEditSeries").onclick = ()=>{
+        document.getElementById("editEventBox").classList.toggle("hidden");
+      };
+      document.getElementById("editTimeKind").onchange = (e)=>{
+        const off = e.target.value === "anytime";
+        document.getElementById("editStart").disabled = off;
+        document.getElementById("editEnd").disabled = off;
+      };
+      document.getElementById("btnSaveSeriesEdit").onclick = saveSeriesEdit;
       document.getElementById("btnSendEventNote").onclick = sendEventNote;
       document.getElementById("btnDeleteSeries").onclick = deleteSeries;
+
+      document.body.addEventListener("touchstart", (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(t.closest("input,textarea,select")) return;
+        if(document.activeElement && typeof document.activeElement.blur === "function"){
+          document.activeElement.blur();
+        }
+      }, { passive:true });
+      document.body.addEventListener("click", (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(t.closest("input,textarea,select")) return;
+        if(document.activeElement && typeof document.activeElement.blur === "function"){
+          document.activeElement.blur();
+        }
+      });
     }
 
     function escapeHtml(s) {

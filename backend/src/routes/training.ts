@@ -11,8 +11,14 @@ function parseDate(value: unknown): string | null {
 
 function parseNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
-  const num = Number(value);
+  const num = Number(String(value).replace(",", "."));
   return Number.isFinite(num) ? num : null;
+}
+
+function parsePositiveInt(value: unknown): number | null {
+  const num = Number(value);
+  if (!Number.isInteger(num) || num <= 0) return null;
+  return num;
 }
 
 trainingRouter.get("/exercises", requireTelegramAuth, (req: Request, res: Response) => {
@@ -61,26 +67,35 @@ trainingRouter.post("/workout", requireTelegramAuth, (req: Request, res: Respons
 
   const weight = parseNumber(body.weight);
   const reps = parseNumber(body.reps);
+  const setsCount = parsePositiveInt(body.setsCount) ?? 1;
   if (weight === null || reps === null || reps <= 0) {
     return res.status(400).json({ error: "bad_set" });
   }
+  if (setsCount > 20) return res.status(400).json({ error: "bad_sets_count" });
 
   const exists = db
     .prepare(`SELECT id FROM exercises WHERE id = ? AND tg_user_id = ?`)
     .get(exerciseId, tgUserId);
   if (!exists) return res.status(404).json({ error: "exercise_not_found" });
 
-  const now = new Date().toISOString();
-  const info = db
-    .prepare(
-      `
+  const insertSet = db.prepare(
+    `
       INSERT INTO workout_sets (tg_user_id, date, exercise_id, weight, reps, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
     `
-    )
-    .run(tgUserId, date, exerciseId, weight, Math.round(reps), now);
+  );
 
-  res.json({ ok: true, id: Number(info.lastInsertRowid) });
+  const createdIds = db.transaction(() => {
+    const ids: number[] = [];
+    for (let i = 0; i < setsCount; i += 1) {
+      const now = new Date().toISOString();
+      const info = insertSet.run(tgUserId, date, exerciseId, weight, Math.round(reps), now);
+      ids.push(Number(info.lastInsertRowid));
+    }
+    return ids;
+  })();
+
+  res.json({ ok: true, ids: createdIds, setsCount: createdIds.length });
 });
 
 trainingRouter.get("/day", requireTelegramAuth, (req: Request, res: Response) => {

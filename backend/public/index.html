@@ -58,7 +58,7 @@
     }
 
     .topbar{
-      padding: 14px 14px 10px;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -96,7 +96,7 @@
       flex: 1 1 auto;
       overflow:auto;
       -webkit-overflow-scrolling: touch;
-      padding: 0 14px 14px;
+      padding: 0 14px calc(14px + env(safe-area-inset-bottom));
       touch-action: manipulation;
     }
     .content.no-scroll{
@@ -176,7 +176,7 @@
 
     .tabs{
       flex: 0 0 auto;
-      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
       background: rgba(11,11,16,.96);
       border-top:1px solid rgba(255,255,255,.10);
       backdrop-filter: blur(10px);
@@ -424,6 +424,16 @@
     body.compact.screen-schedule .event .ss{
       font-size:9px;
     }
+
+    @media (max-width: 430px){
+      :root{ --day-height: 540px; }
+      .topbar{ padding-left:12px; padding-right:12px; }
+      .content{ padding-left:12px; padding-right:12px; }
+      .tabs{ gap:8px; padding-left:12px; padding-right:12px; }
+      .tabbtn{ min-width:96px; padding:12px 8px; font-size:13px; }
+      .card{ border-radius:14px; padding:12px; }
+      .row{ gap:8px; }
+    }
   </style>
 </head>
 
@@ -566,7 +576,7 @@
         exercises: [],
         dayItems: [],
         exerciseForm: { name: "", category: "" },
-        setForm: { exerciseId: "", exerciseName: "", category: "", weight: "", reps: "" },
+        setForm: { exerciseId: "", exerciseName: "", category: "", weight: "", reps: "", setsCount: "1" },
         history: {}
       }
     };
@@ -738,6 +748,7 @@
 
     async function createFoodFromEntry(){
       const f = state.nutrition.entryForm;
+      if(!f.name.trim()) throw new Error("Укажи название блюда");
       const payload = {
         name: f.name.trim(),
         baseGrams: 100,
@@ -866,7 +877,8 @@
         date: state.training.date,
         exerciseId: Number(f.exerciseId),
         weight: Number(f.weight),
-        reps: Number(f.reps)
+        reps: Number(f.reps),
+        setsCount: Number(f.setsCount || 1)
       };
       if(!payload.exerciseId){
         payload.exerciseId = Number(await createExerciseFromSet());
@@ -877,7 +889,7 @@
       });
       const data = await res.json();
       if(!res.ok) throw new Error(data.error || "workout_failed");
-      f.weight = ""; f.reps = "";
+      f.weight = ""; f.reps = ""; f.setsCount = "1";
       await loadTrainingDay();
       render();
     }
@@ -1653,22 +1665,6 @@
             ${entriesHtml}
           </div>
 
-          <div class="card">
-            <h2>Каталог блюд</h2>
-            <div class="muted" style="margin-bottom:10px;">Значения указываются на базовую граммовку (по умолчанию 100г).</div>
-            <div class="row" style="margin-bottom:10px;">
-              <input id="foodName" placeholder="Название" value="${escapeHtml(state.nutrition.foodForm.name)}" />
-              <input id="foodBase" placeholder="База (г)" value="${escapeHtml(state.nutrition.foodForm.baseGrams)}" />
-            </div>
-            <div class="row" style="margin-bottom:10px;">
-              <input id="foodKcal" placeholder="Kcal" value="${escapeHtml(state.nutrition.foodForm.kcal)}" />
-              <input id="foodProtein" placeholder="Белки" value="${escapeHtml(state.nutrition.foodForm.protein)}" />
-              <input id="foodFat" placeholder="Жиры" value="${escapeHtml(state.nutrition.foodForm.fat)}" />
-              <input id="foodCarbs" placeholder="Углеводы" value="${escapeHtml(state.nutrition.foodForm.carbs)}" />
-            </div>
-            <button class="btn-pink" id="btnCreateFood">Сохранить блюдо</button>
-          </div>
-
           ${errLine}
         `;
 
@@ -1782,13 +1778,10 @@
                 <input id="setExerciseCategory" placeholder="Категория" value="${escapeHtml(state.training.setForm.category)}" />
               </div>
             </div>
-                <option value="">Выбрать упражнение</option>
-                ${exOptions}
-              </select>
-            </div>
             <div class="row" style="margin-bottom:10px;">
               <input id="setWeight" placeholder="Вес (кг)" value="${escapeHtml(state.training.setForm.weight)}" />
               <input id="setReps" placeholder="Повторы" value="${escapeHtml(state.training.setForm.reps)}" />
+              <input id="setCount" placeholder="Подходы" value="${escapeHtml(state.training.setForm.setsCount || "1")}" />
             </div>
             <button class="btn-pink" id="btnAddSet">Добавить сет</button>
           </div>
@@ -1817,9 +1810,9 @@
           document.getElementById("setExerciseName").oninput = (e)=> state.training.setForm.exerciseName = e.target.value;
           document.getElementById("setExerciseCategory").oninput = (e)=> state.training.setForm.category = e.target.value;
         }
-        setExercise.onchange = (e)=> state.training.setForm.exerciseId = e.target.value;
         document.getElementById("setWeight").oninput = (e)=> state.training.setForm.weight = e.target.value;
         document.getElementById("setReps").oninput = (e)=> state.training.setForm.reps = e.target.value;
+        document.getElementById("setCount").oninput = (e)=> state.training.setForm.setsCount = e.target.value;
         document.getElementById("btnAddSet").onclick = async ()=>{
           try { await addWorkoutSet(); } catch(e){ toast(e.message); }
         };
@@ -1931,12 +1924,20 @@
       };
       document.getElementById("tabNutrition").onclick = async ()=>{
         state.screen = "nutrition";
-        await ensureNutritionData();
+        try {
+          await ensureNutritionData();
+        } catch(e){
+          toast(e.message || "nutrition_failed");
+        }
         render();
       };
       document.getElementById("tabTraining").onclick = async ()=>{
         state.screen = "training";
-        await ensureTrainingData();
+        try {
+          await ensureTrainingData();
+        } catch(e){
+          toast(e.message || "training_failed");
+        }
         render();
       };
       document.getElementById("tabProfile").onclick = ()=>{

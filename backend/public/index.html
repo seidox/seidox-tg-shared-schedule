@@ -778,6 +778,11 @@
       } else {
         const foodId = await createFoodFromEntry();
         payload.foodId = Number(foodId);
+        payload.name = f.name.trim();
+        payload.kcal = Number(f.kcal);
+        payload.protein = Number(f.protein);
+        payload.fat = Number(f.fat);
+        payload.carbs = Number(f.carbs);
       }
       const res = await apiFetch("/api/nutrition/entry", {
         method:"POST",

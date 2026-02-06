@@ -100,6 +100,75 @@ export function migrate() {
         CREATE INDEX IF NOT EXISTS idx_notes_space_date ON notes(space_id, date);
       `,
     },
+    {
+      id: "002_nutrition_training",
+      sql: `
+        CREATE TABLE IF NOT EXISTS foods (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tg_user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          base_grams INTEGER,
+          kcal REAL NOT NULL,
+          protein REAL NOT NULL,
+          fat REAL NOT NULL,
+          carbs REAL NOT NULL,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_foods_user ON foods(tg_user_id);
+
+        CREATE TABLE IF NOT EXISTS nutrition_entries (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tg_user_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          food_id INTEGER,
+          name TEXT NOT NULL,
+          grams REAL NOT NULL,
+          kcal REAL NOT NULL,
+          protein REAL NOT NULL,
+          fat REAL NOT NULL,
+          carbs REAL NOT NULL,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY(food_id) REFERENCES foods(id) ON DELETE SET NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_nutrition_entries_user_date
+        ON nutrition_entries(tg_user_id, date);
+
+        CREATE TABLE IF NOT EXISTS exercises (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tg_user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          category TEXT,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_exercises_user ON exercises(tg_user_id);
+
+        CREATE TABLE IF NOT EXISTS workout_sets (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tg_user_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          exercise_id INTEGER NOT NULL,
+          weight REAL NOT NULL,
+          reps INTEGER NOT NULL,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY(exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_workout_sets_user_date
+        ON workout_sets(tg_user_id, date);
+
+        CREATE TABLE IF NOT EXISTS daily_stats (
+          tg_user_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          weight_kg REAL,
+          water_ml INTEGER,
+          updated_at TEXT NOT NULL,
+          PRIMARY KEY (tg_user_id, date)
+        );
+      `,
+    },
   ];
 
   const insertMigration = db.prepare(

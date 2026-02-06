@@ -30,6 +30,7 @@
       --c6:#facc15;
 
       --app-h: 100vh; /* будет заменено tg.viewportStableHeight */
+      --day-height: 580px;
     }
 
     *{ box-sizing:border-box; }
@@ -57,7 +58,7 @@
     }
 
     .topbar{
-      padding: 14px 14px 10px;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -75,11 +76,6 @@
       box-shadow:0 0 0 4px rgba(255,45,134,.15);
       flex: 0 0 auto;
     }
-    .badge{
-      font-size:12px; padding:4px 8px; border:1px solid var(--border);
-      border-radius:999px; background:rgba(255,255,255,.03); color:var(--muted);
-      flex: 0 0 auto;
-    }
     .pill{
       display:inline-flex; align-items:center; gap:8px;
       padding:6px 10px; border-radius:999px; border:1px solid var(--border);
@@ -89,14 +85,41 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .headerDate{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      font-weight:900;
+      font-size:28px;
+      margin:0 0 8px;
+    }
+    .headerDate .dow{ color:var(--pink2); }
+    .dateRow{ display:flex; gap:8px; flex-wrap:wrap; }
+    .dateRow > *{ flex:1 1 120px; min-width:0; }
+    .miniBtn{ width:auto; min-width:34px; padding:8px 10px; font-size:14px; border-radius:10px; }
+    .logItem{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+    .logItem:last-child{ border-bottom:none; }
+    .iconBtns{ display:flex; gap:6px; }
+    .nutriProgress{ display:grid; gap:10px; }
+    .meter{ display:grid; gap:6px; }
+    .meterTop{ display:flex; justify-content:space-between; font-size:13px; color:var(--muted); }
+    .meterBar{ height:9px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; }
+    .meterBar > span{ display:block; height:100%; border-radius:999px; }
+    .inlineActions{ display:flex; gap:8px; flex:0 0 auto; }
+    .summaryGrid{ display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:8px; }
+    .small{ font-size:13px; }
     .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
 
     .content{
       flex: 1 1 auto;
       overflow:auto;
       -webkit-overflow-scrolling: touch;
-      padding: 0 14px 14px;
+      padding: 0 14px calc(14px + env(safe-area-inset-bottom));
       touch-action: manipulation;
+    }
+    .content.no-scroll{
+      overflow:hidden;
     }
 
     .card{
@@ -172,16 +195,18 @@
 
     .tabs{
       flex: 0 0 auto;
-      padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
       background: rgba(11,11,16,.96);
       border-top:1px solid rgba(255,255,255,.10);
       backdrop-filter: blur(10px);
       display:flex;
       gap:12px;
+      overflow-x:auto;
     }
     .tabbtn{
       flex:1;
-      padding:16px 10px;
+      min-width:110px;
+      padding:14px 10px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.05);
@@ -216,7 +241,7 @@
       min-width:0;
     }
     .colhead{
-      padding:12px;
+      padding:10px;
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -250,15 +275,16 @@
 
     .daywrap{
       position:relative;
-      height: 700px;
-      overflow:auto;
+      height:auto;
+      overflow:visible;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
     .daygrid{
       position:relative;
-      height: 1440px;
-      min-height:1440px;
+      height: var(--day-height, 1200px);
+      min-height: var(--day-height, 1200px);
+      pointer-events:none;
     }
     .hline{
       position:absolute;
@@ -269,36 +295,39 @@
     .hlabel{
       position:absolute;
       left:10px;
-      transform: translateY(-50%);
+      height:18px;
+      line-height:18px;
       font-size:11px;
       color: rgba(244,244,255,.42);
       background: rgba(11,11,16,.70);
       border:1px solid rgba(255,255,255,.08);
       border-radius:999px;
-      padding:3px 8px;
+      padding:0 8px;
       pointer-events:none;
     }
 
     .event{
       position:absolute;
-      left:60px;
+      left:56px;
       right:10px;
       border-radius:14px;
-      padding:8px 10px;
+      padding:6px 8px;
       border:1px solid rgba(255,255,255,.14);
       box-shadow: 0 10px 18px rgba(0,0,0,.35);
       cursor:pointer;
       overflow:hidden;
       -webkit-tap-highlight-color: transparent;
+      pointer-events:auto;
+      touch-action: pan-y;
     }
     .event .tt{
       font-weight:950;
-      font-size:12px;
+      font-size:11px;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       margin-bottom:3px;
     }
     .event .ss{
-      font-size:11px;
+      font-size:10px;
       color: rgba(244,244,255,.78);
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
@@ -376,7 +405,7 @@
     }
     .seg button{
       flex:1;
-      padding:12px 10px;
+      padding:10px 10px;
       border-radius:14px;
       border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.04);
@@ -388,6 +417,44 @@
       border-color: rgba(255,45,134,.45);
       color: var(--text);
     }
+
+    body.screen-schedule .card{
+      padding:12px;
+    }
+    body.screen-schedule .notesBox .noteItem{
+      padding:8px;
+    }
+
+    body.compact{
+      --day-height: 520px;
+    }
+    body.compact.screen-schedule .card{
+      padding:10px;
+    }
+    body.compact.screen-schedule .colhead{
+      padding:8px;
+    }
+    body.compact.screen-schedule .event{
+      padding:5px 7px;
+    }
+    body.compact.screen-schedule .event .tt{
+      font-size:10px;
+    }
+    body.compact.screen-schedule .event .ss{
+      font-size:9px;
+    }
+
+    @media (max-width: 430px){
+      :root{ --day-height: 540px; }
+      .topbar{ padding-left:12px; padding-right:12px; }
+      .content{ padding-left:12px; padding-right:12px; }
+      .tabs{ gap:8px; padding-left:12px; padding-right:12px; }
+      .tabbtn{ min-width:96px; padding:12px 8px; font-size:13px; }
+      .card{ border-radius:14px; padding:12px; }
+      .row{ gap:8px; }
+      .headerDate{ font-size:24px; }
+      .summaryGrid{ grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 
@@ -397,9 +464,7 @@
       <div class="brand">
         <span class="dot"></span>
         <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Shared Schedule</span>
-        <span class="badge">private ×2</span>
       </div>
-      <div class="pill" id="statusPill"><span class="mono">…</span></div>
     </div>
 
     <div class="content">
@@ -409,6 +474,8 @@
     <div class="tabs hidden" id="tabs">
       <button class="tabbtn" id="tabSchedule">Schedule</button>
       <button class="tabbtn" id="tabCreate">Create</button>
+      <button class="tabbtn" id="tabNutrition">Nutrition</button>
+      <button class="tabbtn" id="tabTraining">Training</button>
       <button class="tabbtn" id="tabProfile">Profile</button>
     </div>
   </div>
@@ -425,8 +492,28 @@
         <div id="eventMeta" class="muted" style="margin-bottom:10px;"></div>
 
         <div class="row" style="margin-bottom:10px;">
+          <button class="btn-ghost" id="btnEditSeries">Редактировать событие</button>
           <button class="btn-ghost" id="btnAddEventNote">Добавить заметку к событию</button>
           <button class="btn-danger" id="btnDeleteSeries">Удалить событие</button>
+        </div>
+
+        <div id="editEventBox" class="hidden" style="margin-bottom:10px;">
+          <div class="row" style="margin-bottom:8px;">
+            <input id="editTitle" placeholder="Название" />
+            <select id="editTimeKind">
+              <option value="exact">Exact</option>
+              <option value="approx">Approx</option>
+              <option value="anytime">Anytime</option>
+            </select>
+          </div>
+          <div class="row" style="margin-bottom:8px;">
+            <input id="editStart" placeholder="Начало (HH:MM)" />
+            <input id="editEnd" placeholder="Конец (HH:MM)" />
+          </div>
+          <div class="row" style="margin-bottom:8px;">
+            <select id="editColor"></select>
+            <button class="btn-pink" id="btnSaveSeriesEdit">Сохранить</button>
+          </div>
         </div>
 
         <div id="addEventNoteBox" class="hidden">
@@ -464,6 +551,12 @@
       return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
     }
 
+    function getDayHeight(){
+      const raw = getCss("--day-height");
+      const val = Number.parseFloat(raw);
+      return Number.isFinite(val) && val > 0 ? val : 580;
+    }
+
     const COLORS = [
       { id:"c1", hex:getCss("--c1") },
       { id:"c2", hex:getCss("--c2") },
@@ -478,7 +571,7 @@
       lastPin: null,
       error: null,
 
-      screen: "boot", // boot | pair | schedule | create | profile
+      screen: "boot", // boot | pair | schedule | create | nutrition | training | profile
       date: todayISO(),
       dayData: null,
       since: null,
@@ -486,6 +579,7 @@
       actionLock: false,
 
       weeklyMask: 0,
+      compact: localStorage.getItem("compactMode") === "1",
 
       createMode: "event", // event | note
       form: {
@@ -495,7 +589,7 @@
         end: "18:00",
         recurrence: "none",
         singleDate: todayISO(),
-        cyclePattern: "1100",
+        everyXDays: "4",
         cycleAnchor: todayISO(),
         color: "c1"
       },
@@ -505,11 +599,39 @@
         text: ""
       },
 
-      selectedEvent: null
+      selectedEvent: null,
+
+      nutrition: {
+        date: todayISO(),
+        foods: [],
+        entries: [],
+        totals: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
+        stats: { weightKg: null, waterMl: null },
+        goals: JSON.parse(localStorage.getItem("nutritionGoals") || '{"kcal":2000,"protein":140,"fat":70,"carbs":220}'),
+        weightLocked: false,
+        waterLocked: false,
+        showAddForm: false,
+        entryForm: { foodId: "custom", name: "", grams: "", kcal: "", protein: "", fat: "", carbs: "" },
+      },
+
+      training: {
+        date: todayISO(),
+        exercises: [],
+        dayItems: [],
+        showAddForm: true,
+        exerciseForm: { name: "", category: "" },
+        setForm: { exerciseId: "", exerciseName: "", category: "", weight: "", reps: "", setsCount: "1" },
+        history: {}
+      }
     };
 
     function realPaired(){
-      return (state.me?.paired === true) && !!state.me?.otherUserId;
+      return state.me?.membersCount === 2 && state.me?.paired === true;
+    }
+
+    function applyCompactMode(){
+      document.body.classList.toggle("compact", state.compact);
+      localStorage.setItem("compactMode", state.compact ? "1" : "0");
     }
 
     function apiFetch(path, options = {}) {
@@ -521,9 +643,7 @@
       return fetch(path, Object.assign({}, options, { headers }));
     }
 
-    function setPill(text){
-      document.getElementById("statusPill").innerHTML = `<span class="mono">${escapeHtml(text)}</span>`;
-    }
+    function setPill(_text){}
 
     function todayISO(){
       const d = new Date();
@@ -536,8 +656,17 @@
     }
     function fmtDow(dateISO){
       const d = new Date(dateISO + "T00:00:00");
-      const days = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+      const days = ["ВС","ПН","ВТ","СР","ЧТ","ПТ","СБ"];
       return days[d.getDay()];
+    }
+    function fmtRuDate(dateISO){
+      const d = new Date(dateISO + "T00:00:00");
+      return d.toLocaleDateString("ru-RU", { day:"numeric", month:"short", year:"numeric" }).replace(" г.", "");
+    }
+    function calcPercent(value, goal){
+      const g = Number(goal || 0);
+      if(g <= 0) return 0;
+      return Math.max(0, Math.min(100, (Number(value || 0) / g) * 100));
     }
 
     function hmToMin(hm){
@@ -552,6 +681,9 @@
       const h = Math.floor(min/60);
       const m = min%60;
       return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+    }
+    function fmtNum(n){
+      return Number(n || 0).toFixed(1);
     }
     function colorHex(id){
       return (COLORS.find(c=>c.id===id)?.hex) || getCss("--pink");
@@ -632,6 +764,197 @@
       if(state.screen === "schedule" || state.screen === "profile"){
         render();
       }
+    }
+
+    async function loadNutritionFoods(){
+      const res = await apiFetch("/api/nutrition/foods");
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "foods_failed");
+      state.nutrition.foods = data.foods || [];
+    }
+
+    async function loadNutritionDay(){
+      const date = state.nutrition.date;
+      const res = await apiFetch(`/api/nutrition/day?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "nutrition_day_failed");
+      state.nutrition.entries = data.entries || [];
+      state.nutrition.totals = data.totals || { kcal:0, protein:0, fat:0, carbs:0 };
+    }
+
+    async function loadStatsDay(){
+      const date = state.nutrition.date;
+      const res = await apiFetch(`/api/stats/day?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "stats_failed");
+      state.nutrition.stats = {
+        weightKg: data.weightKg ?? null,
+        waterMl: data.waterMl ?? null
+      };
+      state.nutrition.weightLocked = data.weightKg !== null && data.weightKg !== undefined;
+      state.nutrition.waterLocked = data.waterMl !== null && data.waterMl !== undefined;
+    }
+
+    async function ensureNutritionData(){
+      await Promise.all([loadNutritionFoods(), loadNutritionDay(), loadStatsDay()]);
+    }
+
+    async function createFoodFromEntry(){
+      const f = state.nutrition.entryForm;
+      if(!f.name.trim()) throw new Error("Укажи название блюда");
+      const payload = {
+        name: f.name.trim(),
+        baseGrams: 100,
+        kcal: Number(f.kcal),
+        protein: Number(f.protein),
+        fat: Number(f.fat),
+        carbs: Number(f.carbs)
+      };
+      const res = await apiFetch("/api/nutrition/food", {
+        method:"POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "food_create_failed");
+      await loadNutritionFoods();
+      return data.id;
+    }
+
+    async function addNutritionEntry(){
+      const f = state.nutrition.entryForm;
+      const payload = {
+        date: state.nutrition.date,
+        grams: Number(f.grams || 0)
+      };
+      if(f.foodId && f.foodId !== "custom"){
+        payload.foodId = Number(f.foodId);
+      } else {
+        const foodId = await createFoodFromEntry();
+        payload.foodId = Number(foodId);
+      }
+      const res = await apiFetch("/api/nutrition/entry", {
+        method:"POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "entry_add_failed");
+      await loadNutritionDay();
+      render();
+    }
+
+    async function updateEntryGrams(entryId, grams){
+      const res = await apiFetch(`/api/nutrition/entry/${entryId}`, {
+        method:"PUT",
+        body: JSON.stringify({ grams: Number(grams) })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "entry_update_failed");
+      await loadNutritionDay();
+      render();
+    }
+
+    async function deleteEntry(entryId){
+      const res = await apiFetch(`/api/nutrition/entry/${entryId}`, { method:"DELETE" });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "entry_delete_failed");
+      await loadNutritionDay();
+      render();
+    }
+
+    async function saveWeight(){
+      const value = document.getElementById("weightInput").value;
+      const res = await apiFetch("/api/stats/weight", {
+        method:"PUT",
+        body: JSON.stringify({ date: state.nutrition.date, kg: Number(value) })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "weight_failed");
+      await loadStatsDay();
+      state.nutrition.weightLocked = true;
+      render();
+    }
+
+    async function saveWater(){
+      const value = document.getElementById("waterInput").value;
+      const res = await apiFetch("/api/stats/water", {
+        method:"PUT",
+        body: JSON.stringify({ date: state.nutrition.date, ml: Number(value) })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "water_failed");
+      await loadStatsDay();
+      state.nutrition.waterLocked = true;
+      render();
+    }
+
+    function saveNutritionGoals(){
+      localStorage.setItem("nutritionGoals", JSON.stringify(state.nutrition.goals));
+      render();
+    }
+
+    async function loadExercises(){
+      const res = await apiFetch("/api/training/exercises");
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "exercises_failed");
+      state.training.exercises = data.exercises || [];
+    }
+
+    async function loadTrainingDay(){
+      const date = state.training.date;
+      const res = await apiFetch(`/api/training/day?date=${encodeURIComponent(date)}`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "training_day_failed");
+      state.training.dayItems = data.items || [];
+    }
+
+    async function ensureTrainingData(){
+      await Promise.all([loadExercises(), loadTrainingDay()]);
+    }
+
+    async function createExerciseFromSet(){
+      const f = state.training.setForm;
+      const res = await apiFetch("/api/training/exercise", {
+        method:"POST",
+        body: JSON.stringify({ name: f.exerciseName.trim(), category: f.category.trim() })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "exercise_create_failed");
+      await loadExercises();
+      return data.id;
+    }
+
+    async function addWorkoutSet(){
+      const f = state.training.setForm;
+      if(!f.exerciseId && !f.exerciseName.trim()){
+        throw new Error("Укажи упражнение");
+      }
+      const payload = {
+        date: state.training.date,
+        exerciseId: Number(f.exerciseId),
+        weight: Number(f.weight),
+        reps: Number(f.reps),
+        setsCount: Number(f.setsCount || 1)
+      };
+      if(!payload.exerciseId){
+        payload.exerciseId = Number(await createExerciseFromSet());
+      }
+      const res = await apiFetch("/api/training/workout", {
+        method:"POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "workout_failed");
+      f.weight = ""; f.reps = ""; f.setsCount = "1";
+      await loadTrainingDay();
+      render();
+    }
+
+    async function loadExerciseHistory(exerciseId){
+      const res = await apiFetch(`/api/training/exercise/${exerciseId}/history`);
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || "history_failed");
+      state.training.history[exerciseId] = data.history || [];
+      render();
     }
 
     async function createPair(){
@@ -729,31 +1052,35 @@
               <div class="avatar">${escapeHtml(label.slice(0,1).toUpperCase())}</div>
               <div class="names">
                 <div class="t">${escapeHtml(label)}</div>
-                <small class="mono">${escapeHtml(String(userId || "—"))}</small>
+                
               </div>
             </div>
             <span class="pill">${escapeHtml(String(evs.length))} events</span>
           </div>
 
           <div class="daywrap">
-            <div class="daygrid">
+            <div class="daygrid" style="height:${getDayHeight()}px; min-height:${getDayHeight()}px;">
       `;
 
+      const labelHeight = 18;
+      const scale = getDayHeight() / 1440;
       for(let h=0; h<=24; h++){
-        const top = h*60;
+        const top = h*60*scale;
         html += `<div class="hline" style="top:${top}px"></div>`;
         if(h<24){
-          html += `<div class="hlabel" style="top:${top+1}px">${escapeHtml(String(h).padStart(2,"0")+":00")}</div>`;
+          html += `<div class="hlabel" style="top:${top + 1 - labelHeight / 2}px">${escapeHtml(String(h).padStart(2,"0")+":00")}</div>`;
         }
       }
 
       for(const e of evs){
-        let top = 10, height = 70, cls = "event any";
+        let top = 10 * scale;
+        let height = Math.max(34, 70 * scale);
+        let cls = "event any";
         if(e.timeKind !== "anytime"){
           const s = Number(e.startMin ?? 0);
           const en = Number(e.endMin ?? (s+60));
-          top = Math.max(0, Math.min(1440, s));
-          height = Math.max(18, Math.min(1440-top, en - s));
+          top = Math.max(0, Math.min(1440, s)) * scale;
+          height = Math.max(14, Math.min(1440, en - s) * scale);
           cls = "event";
           if(e.timeKind === "approx") cls += " approx";
         }
@@ -795,16 +1122,28 @@
     function openEventDetails(ev){
       state.selectedEvent = ev;
       document.getElementById("eventTitle").textContent = ev.title;
+      const owner = String(ev.ownerTgUserId) === String(myId()) ? "you" : "partner";
       document.getElementById("eventMeta").innerHTML = `
-        <div class="pill">Дата: <span class="mono">${escapeHtml(state.date)}</span></div>
+        <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.date))}</span><span class="dow">${escapeHtml(fmtDow(state.date))}</span></div>
         <div class="pill">Время: <span class="mono">${escapeHtml(makeTimeLabel(ev))}</span></div>
-        <div class="pill">Owner: <span class="mono">${escapeHtml(String(ev.ownerTgUserId))}</span></div>
-        <div class="pill">SeriesId: <span class="mono">${escapeHtml(String(ev.seriesId))}</span></div>
+        <div class="pill">Owner: <span class="mono">${escapeHtml(owner)}</span></div>
       `;
+
+      const editBox = document.getElementById("editEventBox");
+      editBox.classList.add("hidden");
+      document.getElementById("editTitle").value = ev.title || "";
+      document.getElementById("editTimeKind").value = ev.timeKind || "exact";
+      document.getElementById("editStart").value = minToHm(ev.startMin);
+      document.getElementById("editEnd").value = minToHm(ev.endMin);
+      document.getElementById("editStart").disabled = ev.timeKind === "anytime";
+      document.getElementById("editEnd").disabled = ev.timeKind === "anytime";
+      const colorSel = document.getElementById("editColor");
+      colorSel.innerHTML = COLORS.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.id)}</option>`).join("");
+      colorSel.value = ev.color || "c1";
 
       const notes = (state.dayData?.notes||[]).filter(n => Number(n.seriesId) === Number(ev.seriesId));
       const list = notes.map(n=>{
-        const who = String(n.authorTgUserId)===String(myId()) ? "you" : "other";
+        const who = String(n.authorTgUserId)===String(myId()) ? "you" : "partner";
         return `<div class="pill" style="margin:8px 0;">
           <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
           <b>${escapeHtml(who)}</b>: ${escapeHtml(n.text)}
@@ -813,11 +1152,14 @@
       document.getElementById("eventNotesList").innerHTML = list || `<div class="muted">Пока нет.</div>`;
 
       const delBtn = document.getElementById("btnDeleteSeries");
+      const editBtn = document.getElementById("btnEditSeries");
       if(String(ev.ownerTgUserId) !== String(myId())){
         delBtn.disabled = true;
+        editBtn.disabled = true;
         delBtn.textContent = "Удалить (только владелец)";
       } else {
         delBtn.disabled = false;
+        editBtn.disabled = false;
         delBtn.textContent = "Удалить событие";
       }
 
@@ -856,6 +1198,41 @@
         closeEventModal();
         await loadDay(true);
         toast("Удалено");
+      }catch(e){
+        toast("Ошибка: "+e.message);
+      }
+    }
+
+    async function saveSeriesEdit(){
+      const ev = state.selectedEvent;
+      if(!ev) return;
+      if(String(ev.ownerTgUserId) !== String(myId())) return;
+      const title = document.getElementById("editTitle").value.trim();
+      const timeKind = document.getElementById("editTimeKind").value;
+      const start = document.getElementById("editStart").value;
+      const end = document.getElementById("editEnd").value;
+      const color = document.getElementById("editColor").value;
+      let startMin = null;
+      let endMin = null;
+      if(timeKind !== "anytime"){
+        startMin = hmToMin(start);
+        endMin = hmToMin(end);
+        if(startMin === null || endMin === null || startMin >= endMin){
+          toast("Проверь время");
+          return;
+        }
+      }
+      try{
+        const res = await apiFetch("/api/series/"+ev.seriesId, {
+          method:"PUT",
+          body: JSON.stringify({ title, color, timeKind, startMin, endMin })
+        });
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || "edit_failed");
+        document.getElementById("editEventBox").classList.add("hidden");
+        await loadDay(true);
+        closeEventModal();
+        toast("Сохранено");
       }catch(e){
         toast("Ошибка: "+e.message);
       }
@@ -914,7 +1291,7 @@
       const end = document.getElementById("fEnd");
       const rec = document.getElementById("fRecurrence");
       const single = document.getElementById("fSingleDate");
-      const cycP = document.getElementById("fCyclePattern");
+      const cycP = document.getElementById("fEveryXDays");
       const cycA = document.getElementById("fCycleAnchor");
 
       title.value = state.form.title;
@@ -923,7 +1300,7 @@
       end.value = state.form.end;
       rec.value = state.form.recurrence;
       single.value = state.form.singleDate;
-      cycP.value = state.form.cyclePattern;
+      cycP.value = state.form.everyXDays;
       cycA.value = state.form.cycleAnchor;
 
       title.oninput = (e)=> state.form.title = e.target.value;
@@ -932,7 +1309,7 @@
       end.oninput = (e)=> state.form.end = e.target.value;
       rec.onchange = (e)=>{ state.form.recurrence = e.target.value; syncRecurrenceUI(); };
       single.oninput = (e)=> state.form.singleDate = e.target.value;
-      cycP.oninput = (e)=> state.form.cyclePattern = e.target.value;
+      cycP.oninput = (e)=> state.form.everyXDays = e.target.value;
       cycA.oninput = (e)=> state.form.cycleAnchor = e.target.value;
 
       buildColorRow();
@@ -984,11 +1361,11 @@
         if(state.weeklyMask === 0){ toast("Выбери дни"); return; }
         body.weeklyMask = state.weeklyMask;
       } else if(recurrence === "cycle"){
-        const p = state.form.cyclePattern.trim();
+        const every = Number(state.form.everyXDays || 0);
         const a = state.form.cycleAnchor.trim();
-        if(!/^[01]{2,31}$/.test(p)){ toast("Pattern 0/1 (2..31)"); return; }
+        if(!Number.isInteger(every) || every < 2 || every > 31){ toast("X должен быть от 2 до 31"); return; }
         if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){ toast("Anchor YYYY-MM-DD"); return; }
-        body.cyclePattern = p;
+        body.cyclePattern = "1" + "0".repeat(every - 1);
         body.cycleAnchorDate = a;
       }
 
@@ -1035,16 +1412,22 @@
     function setActiveTab(tab){
       const s = document.getElementById("tabSchedule");
       const c = document.getElementById("tabCreate");
+      const n = document.getElementById("tabNutrition");
+      const t = document.getElementById("tabTraining");
       const p = document.getElementById("tabProfile");
-      [s,c,p].forEach(x=>x.classList.remove("active"));
+      [s,c,n,t,p].forEach(x=>x.classList.remove("active"));
       if(tab==="schedule") s.classList.add("active");
       if(tab==="create") c.classList.add("active");
+      if(tab==="nutrition") n.classList.add("active");
+      if(tab==="training") t.classList.add("active");
       if(tab==="profile") p.classList.add("active");
     }
 
     function render(){
       const root = document.getElementById("app");
       const errLine = state.error ? `<div class="card"><div class="err">${escapeHtml(state.error)}</div></div>` : "";
+      document.body.classList.toggle("screen-schedule", state.screen === "schedule");
+      applyCompactMode();
 
       if(!tg){
         root.innerHTML = `<div class="card"><h2>Открой в Telegram</h2><div class="muted">Работает только внутри Telegram Mini App.</div></div>`;
@@ -1074,6 +1457,8 @@
             <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
             <div style="height:8px;"></div>
             <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId || "—"))}</span></div>
+            <div style="height:8px;"></div>
+            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount ?? 0))}</span></div>
           </div>
 
           <div class="card">
@@ -1092,6 +1477,13 @@
             <h2>Ввести PIN</h2>
             <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="6 цифр" />
             <button class="btn-pink" id="btnJoinPin">Подключиться</button>
+          </div>
+
+          <div class="card">
+            <h2>Сбросить связь</h2>
+            <div class="muted">Удаляет тебя из space и позволяет начать pairing заново.</div>
+            <div class="divider"></div>
+            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
           </div>
 
           ${errLine}
@@ -1114,6 +1506,8 @@
           joinPair(pin);
         };
 
+        document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
+
         return;
       }
 
@@ -1126,28 +1520,16 @@
 
         root.innerHTML = `
           <div class="card">
-            <div class="row" style="align-items:flex-start;">
-              <div>
-                <h2>Schedule</h2>
-                <div class="muted">
-                  <span class="pill">Дата: <span class="mono">${escapeHtml(state.date)}</span></span>
-                  <span class="pill">День: <span class="mono">${escapeHtml(fmtDow(state.date))}</span></span>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
-              </div>
-            </div>
+            <h2>Schedule</h2>
+            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.date))}</span><span class="dow">${escapeHtml(fmtDow(state.date))}</span></div>
 
-            <div class="divider"></div>
-
-            <div class="row">
+            <div class="dateRow" style="margin-top:10px;">
               <button class="btn-ghost" id="btnPrev">←</button>
               <button class="btn-ghost" id="btnToday">Сегодня</button>
               <button class="btn-ghost" id="btnNext">→</button>
             </div>
 
-            <div class="row" style="margin-top:10px;">
+            <div class="dateRow" style="margin-top:8px;">
               <button class="btn-ghost" id="btnTomorrow">Завтра</button>
               <input id="datePick" type="date" value="${escapeHtml(state.date)}" />
               <button class="btn-ghost" id="btnRefreshDay">Обновить</button>
@@ -1166,7 +1548,7 @@
               <div class="noteItem">
                 <div class="noteMeta">
                   <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
-                  <span class="mono">${escapeHtml(String(n.authorTgUserId))}</span>
+                  <span class="mono">${escapeHtml(String(n.authorTgUserId)===String(myId())?"you":"partner")}</span>
                 </div>
                 <div>${escapeHtml(n.text)}</div>
               </div>
@@ -1224,7 +1606,7 @@
                 <select id="fRecurrence">
                   <option value="none">Single date</option>
                   <option value="weekly">Weekly</option>
-                  <option value="cycle">Cycle (2/2)</option>
+                  <option value="cycle">Раз в X дней</option>
                 </select>
                 <input id="fSingleDate" placeholder="Дата (YYYY-MM-DD)" />
               </div>
@@ -1243,12 +1625,12 @@
               </div>
 
               <div id="cycleBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
-                <div class="muted" style="margin-bottom:8px;">Cycle pattern:</div>
+                <div class="muted" style="margin-bottom:8px;">Повторять раз в X дней:</div>
                 <div class="row" style="margin-bottom:10px;">
-                  <input id="fCyclePattern" placeholder="Pattern (например 1100)" />
+                  <input id="fEveryXDays" placeholder="Например: 4" />
                   <input id="fCycleAnchor" placeholder="Anchor date (YYYY-MM-DD)" />
                 </div>
-                <div class="muted">“1100” = работа 2 дня, выходной 2 дня.</div>
+                <div class="muted">Если X=4, событие будет каждые 4 дня от даты старта.</div>
               </div>
 
               <div class="muted" style="margin:10px 0 8px 0;">Цвет:</div>
@@ -1289,28 +1671,266 @@
         return;
       }
 
+      if(state.screen === "nutrition"){
+        setActiveTab("nutrition");
+
+        const foods = state.nutrition.foods || [];
+        const entryForm = state.nutrition.entryForm;
+        const goals = state.nutrition.goals;
+        const foodOptions = foods.map(f=>`<option value="${escapeHtml(String(f.id))}">${escapeHtml(f.name)}</option>`).join("");
+
+        const metrics = [
+          { key:"kcal", label:"Калории", color:"#ff2d86", unit:"kcal" },
+          { key:"protein", label:"Белки", color:"#38bdf8", unit:"г" },
+          { key:"fat", label:"Жиры", color:"#f97316", unit:"г" },
+          { key:"carbs", label:"Углеводы", color:"#22c55e", unit:"г" }
+        ];
+        const progressHtml = metrics.map(m=>`
+          <div class="meter">
+            <div class="meterTop"><b>${escapeHtml(m.label)}</b><span>${escapeHtml(fmtNum(state.nutrition.totals[m.key]))} / ${escapeHtml(fmtNum(goals[m.key] || 0))} ${escapeHtml(m.unit)}</span></div>
+            <div class="meterBar"><span style="width:${calcPercent(state.nutrition.totals[m.key], goals[m.key])}%; background:${m.color};"></span></div>
+          </div>
+        `).join("");
+
+        const entriesHtml = (state.nutrition.entries || []).map(e=>`
+          <div class="logItem">
+            <div style="min-width:0;">
+              <div><b>${escapeHtml(e.name)}</b></div>
+              <div class="muted">${escapeHtml(fmtNum(e.kcal))} kcal • Б ${escapeHtml(fmtNum(e.protein))} / Ж ${escapeHtml(fmtNum(e.fat))} / У ${escapeHtml(fmtNum(e.carbs))}</div>
+              <div class="muted small">${escapeHtml(String(e.grams))} г</div>
+            </div>
+            <div class="iconBtns">
+              <button class="btn-ghost miniBtn" data-edit-entry="${escapeHtml(String(e.id))}">✎</button>
+              <button class="btn-danger miniBtn" data-del-entry="${escapeHtml(String(e.id))}">✕</button>
+            </div>
+          </div>
+          <div class="hidden" id="edit-entry-box-${escapeHtml(String(e.id))}" style="margin-bottom:10px;">
+            <div class="row">
+              <input id="entryGrams-${escapeHtml(String(e.id))}" placeholder="Новые граммы" value="${escapeHtml(String(e.grams))}" />
+              <button class="btn-ghost" data-update-entry="${escapeHtml(String(e.id))}">Сохранить</button>
+            </div>
+          </div>
+        `).join("") || `<div class="muted">Пока нет записей за этот день.</div>`;
+
+        root.innerHTML = `
+          <div class="card">
+            <h2>Nutrition</h2>
+            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.nutrition.date))}</span><span class="dow">${escapeHtml(fmtDow(state.nutrition.date))}</span></div>
+            <div class="dateRow"><input id="nutritionDate" type="date" value="${escapeHtml(state.nutrition.date)}" /></div>
+            <div class="divider"></div>
+            <div class="nutriProgress">${progressHtml}</div>
+          </div>
+
+          <div class="card">
+            <h2>Вес и вода</h2>
+            <div class="summaryGrid">
+              <div>
+                <div class="muted">Вес (кг)</div>
+                <div class="row" style="margin-top:6px;">
+                  <input id="weightInput" placeholder="Например 69.5" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? ""))}" ${state.nutrition.weightLocked ? "disabled" : ""} />
+                  <div class="inlineActions">
+                    <button class="btn-ghost" id="btnToggleWeightEdit">${state.nutrition.weightLocked ? "Ред." : "Блок"}</button>
+                    <button class="btn-pink" id="btnSaveWeight">Сохранить</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="muted">Вода (мл)</div>
+                <div class="row" style="margin-top:6px;">
+                  <input id="waterInput" placeholder="Например 2000" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? ""))}" ${state.nutrition.waterLocked ? "disabled" : ""} />
+                  <div class="inlineActions">
+                    <button class="btn-ghost" id="btnToggleWaterEdit">${state.nutrition.waterLocked ? "Ред." : "Блок"}</button>
+                    <button class="btn-pink" id="btnSaveWater">Сохранить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <h2 style="margin:0;">Добавление пищи</h2>
+              <button class="btn-pink" id="btnToggleAddEntry">${state.nutrition.showAddForm ? "Скрыть" : "Добавить"}</button>
+            </div>
+            <div id="addEntryPanel" class="${state.nutrition.showAddForm ? "" : "hidden"}" style="margin-top:10px;">
+              <select id="entryFoodSelect" style="margin-bottom:10px;">
+                <option value="custom">Новая пища</option>
+                ${foodOptions}
+              </select>
+              <div id="customEntryBox" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
+                <input id="entryName" placeholder="Название новой пищи" value="${escapeHtml(entryForm.name)}" style="margin-bottom:10px;" />
+              </div>
+              <input id="entryGrams" placeholder="Граммовка" value="${escapeHtml(entryForm.grams)}" style="margin-bottom:10px;" />
+              <div id="customNutritionMacros" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
+                <div class="row" style="margin-bottom:10px;">
+                  <input id="entryKcal" placeholder="Ккал/100г" value="${escapeHtml(entryForm.kcal)}" />
+                  <input id="entryProtein" placeholder="Б/100г" value="${escapeHtml(entryForm.protein)}" />
+                </div>
+                <div class="row" style="margin-bottom:10px;">
+                  <input id="entryFat" placeholder="Ж/100г" value="${escapeHtml(entryForm.fat)}" />
+                  <input id="entryCarbs" placeholder="У/100г" value="${escapeHtml(entryForm.carbs)}" />
+                </div>
+              </div>
+              <button class="btn-pink" id="btnAddEntry">Добавить</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Дневной лог</h2>
+            ${entriesHtml}
+          </div>
+
+          ${errLine}
+        `;
+
+        document.getElementById("nutritionDate").onchange = async (e)=>{
+          state.nutrition.date = e.target.value;
+          await loadNutritionDay();
+          await loadStatsDay();
+          render();
+        };
+        document.getElementById("btnToggleWeightEdit").onclick = ()=>{ state.nutrition.weightLocked = !state.nutrition.weightLocked; render(); };
+        document.getElementById("btnToggleWaterEdit").onclick = ()=>{ state.nutrition.waterLocked = !state.nutrition.waterLocked; render(); };
+        document.getElementById("btnSaveWeight").onclick = async ()=>{ try { await saveWeight(); } catch(e){ toast(e.message); } };
+        document.getElementById("btnSaveWater").onclick = async ()=>{ try { await saveWater(); } catch(e){ toast(e.message); } };
+
+        const selectFood = document.getElementById("entryFoodSelect");
+        selectFood.value = entryForm.foodId;
+        selectFood.onchange = (e)=>{ entryForm.foodId = e.target.value; render(); };
+        document.getElementById("btnToggleAddEntry").onclick = ()=>{ state.nutrition.showAddForm = !state.nutrition.showAddForm; render(); };
+        document.getElementById("entryGrams").oninput = (e)=> entryForm.grams = e.target.value;
+        if(entryForm.foodId === "custom"){
+          document.getElementById("entryName").oninput = (e)=> entryForm.name = e.target.value;
+          document.getElementById("entryKcal").oninput = (e)=> entryForm.kcal = e.target.value;
+          document.getElementById("entryProtein").oninput = (e)=> entryForm.protein = e.target.value;
+          document.getElementById("entryFat").oninput = (e)=> entryForm.fat = e.target.value;
+          document.getElementById("entryCarbs").oninput = (e)=> entryForm.carbs = e.target.value;
+        }
+        document.getElementById("btnAddEntry").onclick = async ()=>{ try { await addNutritionEntry(); } catch(e){ toast(e.message); } };
+
+        document.querySelectorAll("[data-del-entry]").forEach(btn=>{ btn.onclick = async ()=>{ try { await deleteEntry(btn.getAttribute("data-del-entry")); } catch(e){ toast(e.message); } }; });
+        document.querySelectorAll("[data-edit-entry]").forEach(btn=>{ btn.onclick = ()=>{ const id = btn.getAttribute("data-edit-entry"); document.getElementById(`edit-entry-box-${id}`).classList.toggle("hidden"); }; });
+        document.querySelectorAll("[data-update-entry]").forEach(btn=>{ btn.onclick = async ()=>{ const entryId = btn.getAttribute("data-update-entry"); const input = document.getElementById(`entryGrams-${entryId}`); try { await updateEntryGrams(entryId, input.value); } catch(e){ toast(e.message); } }; });
+
+        return;
+      }
+
+      if(state.screen === "training"){
+        setActiveTab("training");
+
+        const exOptions = (state.training.exercises || []).map(ex=>
+          `<option value="${escapeHtml(String(ex.id))}">${escapeHtml(ex.name)}${ex.category ? " · "+escapeHtml(ex.category) : ""}</option>`
+        ).join("");
+
+        const itemsHtml = (state.training.dayItems || []).map(item=>{
+          const setsCount = item.sets.length;
+          const first = item.sets[0];
+          const summary = first ? `${escapeHtml(String(first.weight))} кг × ${escapeHtml(String(first.reps))}` : "—";
+          const history = state.training.history[item.exerciseId] || [];
+          const historyHtml = history.length ? history.map(h=>`<div class="muted">${escapeHtml(h.date)} • ${escapeHtml(String(h.weight))}кг × ${escapeHtml(String(h.reps))}</div>`).join("") : "";
+          return `
+            <div class="logItem">
+              <div style="min-width:0;">
+                <div><b>${escapeHtml(item.name)}</b></div>
+                ${item.category ? `<div class="muted">${escapeHtml(item.category)}</div>` : ""}
+                <div class="muted">Подходов: ${escapeHtml(String(setsCount))} • ${summary}</div>
+                ${historyHtml ? `<div style="margin-top:8px;">${historyHtml}</div>` : ""}
+              </div>
+              <button class="btn-ghost miniBtn" data-history="${escapeHtml(String(item.exerciseId))}">↺</button>
+            </div>
+          `;
+        }).join("") || `<div class="muted">Пока нет тренировок за этот день.</div>`;
+
+        root.innerHTML = `
+          <div class="card">
+            <h2>Training</h2>
+            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.training.date))}</span><span class="dow">${escapeHtml(fmtDow(state.training.date))}</span></div>
+            <div class="dateRow"><input id="trainingDate" type="date" value="${escapeHtml(state.training.date)}" /></div>
+          </div>
+
+          <div class="card">
+            <div class="row">
+              <h2 style="margin:0;">Добавить сет</h2>
+              <button class="btn-pink" id="btnToggleTrainingAdd">${state.training.showAddForm ? "Скрыть" : "Добавить"}</button>
+            </div>
+            <div id="trainingAddPanel" class="${state.training.showAddForm ? "" : "hidden"}" style="margin-top:10px;">
+              <select id="setExercise" style="margin-bottom:10px;">
+                <option value="">Новое упражнение</option>
+                ${exOptions}
+              </select>
+              <div id="newExerciseBox" class="${state.training.setForm.exerciseId ? "hidden" : ""}">
+                <input id="setExerciseName" placeholder="Название упражнения" value="${escapeHtml(state.training.setForm.exerciseName)}" style="margin-bottom:10px;" />
+                <input id="setExerciseCategory" placeholder="Категория" value="${escapeHtml(state.training.setForm.category)}" style="margin-bottom:10px;" />
+              </div>
+              <div class="row" style="margin-bottom:10px;">
+                <input id="setWeight" placeholder="Вес (кг)" value="${escapeHtml(state.training.setForm.weight)}" />
+                <input id="setReps" placeholder="Повторы" value="${escapeHtml(state.training.setForm.reps)}" />
+                <input id="setCount" placeholder="Подходы" value="${escapeHtml(state.training.setForm.setsCount || "1")}" />
+              </div>
+              <button class="btn-pink" id="btnAddSet">Добавить</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Лог дня</h2>
+            ${itemsHtml}
+          </div>
+
+          ${errLine}
+        `;
+
+        document.getElementById("trainingDate").onchange = async (e)=>{ state.training.date = e.target.value; await loadTrainingDay(); render(); };
+        document.getElementById("btnToggleTrainingAdd").onclick = ()=>{ state.training.showAddForm = !state.training.showAddForm; render(); };
+        const setExercise = document.getElementById("setExercise");
+        setExercise.value = state.training.setForm.exerciseId;
+        setExercise.onchange = (e)=>{ state.training.setForm.exerciseId = e.target.value; render(); };
+        if(!state.training.setForm.exerciseId){
+          document.getElementById("setExerciseName").oninput = (e)=> state.training.setForm.exerciseName = e.target.value;
+          document.getElementById("setExerciseCategory").oninput = (e)=> state.training.setForm.category = e.target.value;
+        }
+        document.getElementById("setWeight").oninput = (e)=> state.training.setForm.weight = e.target.value;
+        document.getElementById("setReps").oninput = (e)=> state.training.setForm.reps = e.target.value;
+        document.getElementById("setCount").oninput = (e)=> state.training.setForm.setsCount = e.target.value;
+        document.getElementById("btnAddSet").onclick = async ()=>{ try { await addWorkoutSet(); } catch(e){ toast(e.message); } };
+        document.querySelectorAll("[data-history]").forEach(btn=>{ btn.onclick = async ()=>{ try { await loadExerciseHistory(btn.getAttribute("data-history")); } catch(e){ toast(e.message); } }; });
+
+        return;
+      }
+
       if(state.screen === "profile"){
         setActiveTab("profile");
 
         root.innerHTML = `
           <div class="card">
             <h2>Profile</h2>
-            <div class="muted">Связь активна, пока есть partner userId.</div>
+            <div class="muted">You / Partner</div>
             <div class="divider"></div>
-            <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
+            <div class="pill">you</div>
             <div style="height:8px;"></div>
-            <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId))}</span></div>
+            <div class="pill">partner</div>
             <div style="height:8px;"></div>
-            <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
+            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount))}</span></div>
 
             <div class="divider"></div>
+            <h2>Нормы КБЖУ</h2>
+            <div class="summaryGrid" style="margin-bottom:10px;">
+              <input id="goalKcal" placeholder="Ккал" value="${escapeHtml(String(state.nutrition.goals.kcal || ""))}" />
+              <input id="goalProtein" placeholder="Белки" value="${escapeHtml(String(state.nutrition.goals.protein || ""))}" />
+              <input id="goalFat" placeholder="Жиры" value="${escapeHtml(String(state.nutrition.goals.fat || ""))}" />
+              <input id="goalCarbs" placeholder="Углеводы" value="${escapeHtml(String(state.nutrition.goals.carbs || ""))}" />
+            </div>
+            <button class="btn-ghost" id="btnSaveGoals">Сохранить нормы</button>
 
-            <!-- ✅ FIX already_paired -->
-            <button class="btn-danger" id="btnLeaveSpace">Выйти из space (fix already_paired)</button>
+            <div class="divider"></div>
+            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
             <div style="height:10px;"></div>
             <button class="btn-danger" id="btnResetSpace">OWNER: Reset space</button>
 
             <div class="divider"></div>
+            <div class="row" style="margin-bottom:10px;">
+              <div class="pill">Compact</div>
+              <button class="btn-ghost" id="btnToggleCompact">${state.compact ? "Выключить" : "Включить"}</button>
+            </div>
             <button class="btn-ghost" id="btnProfileRefresh">Обновить</button>
           </div>
           ${errLine}
@@ -1322,9 +1942,21 @@
           render();
         };
 
-        // ✅ NEW кнопки
         document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
         document.getElementById("btnResetSpace").onclick = resetSpaceFrontend;
+        document.getElementById("btnToggleCompact").onclick = ()=>{
+          state.compact = !state.compact;
+          applyCompactMode();
+          render();
+        };
+        document.getElementById("btnSaveGoals").onclick = ()=>{
+          state.nutrition.goals.kcal = Number(document.getElementById("goalKcal").value || 0);
+          state.nutrition.goals.protein = Number(document.getElementById("goalProtein").value || 0);
+          state.nutrition.goals.fat = Number(document.getElementById("goalFat").value || 0);
+          state.nutrition.goals.carbs = Number(document.getElementById("goalCarbs").value || 0);
+          saveNutritionGoals();
+          toast("Нормы сохранены");
+        };
 
         return;
       }
@@ -1374,6 +2006,24 @@
         state.screen = "create";
         render();
       };
+      document.getElementById("tabNutrition").onclick = async ()=>{
+        state.screen = "nutrition";
+        try {
+          await ensureNutritionData();
+        } catch(e){
+          toast(e.message || "nutrition_failed");
+        }
+        render();
+      };
+      document.getElementById("tabTraining").onclick = async ()=>{
+        state.screen = "training";
+        try {
+          await ensureTrainingData();
+        } catch(e){
+          toast(e.message || "training_failed");
+        }
+        render();
+      };
       document.getElementById("tabProfile").onclick = ()=>{
         state.screen = "profile";
         render();
@@ -1383,21 +2033,48 @@
       document.getElementById("btnAddEventNote").onclick = ()=>{
         document.getElementById("addEventNoteBox").classList.toggle("hidden");
       };
+      document.getElementById("btnEditSeries").onclick = ()=>{
+        document.getElementById("editEventBox").classList.toggle("hidden");
+      };
+      document.getElementById("editTimeKind").onchange = (e)=>{
+        const off = e.target.value === "anytime";
+        document.getElementById("editStart").disabled = off;
+        document.getElementById("editEnd").disabled = off;
+      };
+      document.getElementById("btnSaveSeriesEdit").onclick = saveSeriesEdit;
       document.getElementById("btnSendEventNote").onclick = sendEventNote;
       document.getElementById("btnDeleteSeries").onclick = deleteSeries;
+
+      document.body.addEventListener("touchstart", (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(t.closest("input,textarea,select")) return;
+        if(document.activeElement && typeof document.activeElement.blur === "function"){
+          document.activeElement.blur();
+        }
+      }, { passive:true });
+      document.body.addEventListener("click", (e)=>{
+        const t = e.target;
+        if(!(t instanceof HTMLElement)) return;
+        if(t.closest("input,textarea,select")) return;
+        if(document.activeElement && typeof document.activeElement.blur === "function"){
+          document.activeElement.blur();
+        }
+      });
     }
 
     function escapeHtml(s) {
       return String(s)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     async function init(){
       state.error = null;
+      applyCompactMode();
       wireGlobal();
       await loadMe();
       if(realPaired()){

@@ -831,6 +831,11 @@
       } else {
         const foodId = await createFoodFromEntry();
         payload.foodId = Number(foodId);
+        payload.name = f.name.trim();
+        payload.kcal = Number(f.kcal);
+        payload.protein = Number(f.protein);
+        payload.fat = Number(f.fat);
+        payload.carbs = Number(f.carbs);
       }
       const res = await apiFetch("/api/nutrition/entry", {
         method:"POST",
@@ -1909,6 +1914,8 @@
             <div style="height:8px;"></div>
             <div class="pill">partner</div>
             <div style="height:8px;"></div>
+            <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
+            <div style="height:8px;"></div>
             <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount))}</span></div>
 
             <div class="divider"></div>
@@ -1922,6 +1929,7 @@
             <button class="btn-ghost" id="btnSaveGoals">Сохранить нормы</button>
 
             <div class="divider"></div>
+            <!-- ✅ FIX already_paired -->
             <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
             <div style="height:10px;"></div>
             <button class="btn-danger" id="btnResetSpace">OWNER: Reset space</button>

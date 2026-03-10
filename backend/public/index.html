@@ -2,2097 +2,268 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Shared Schedule</title>
-
-  <!-- ✅ правильный viewport + запрет зума -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Fitness Tracker</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
   <style>
     :root{
-      --bg:#0b0b10;
-      --card:#12121a;
-      --text:#f4f4ff;
-      --muted:#a7a7c2;
-      --border:#242436;
-      --pink:#ff2d86;
-      --pink2:#ff66b0;
-      --good:#19c37d;
-      --bad:#ff4d4d;
-      --shadow:0 10px 30px rgba(0,0,0,.35);
-
-      --c1:#ff2d86;
-      --c2:#a855f7;
-      --c3:#22c55e;
-      --c4:#38bdf8;
-      --c5:#f97316;
-      --c6:#facc15;
-
-      --app-h: 100vh; /* будет заменено tg.viewportStableHeight */
-      --day-height: 580px;
+      --bg:#050507;
+      --card:#0f0f14;
+      --text:#b88cff;
+      --muted:#8b74b9;
+      --border:#2b1d42;
+      --accent:#8b5cf6;
+      --accent-soft:#6d28d9;
+      --danger:#ef4444;
+      --ok:#22c55e;
     }
-
-    *{ box-sizing:border-box; }
-
-    html, body{
-      height:100%;
+    *{box-sizing:border-box}
+    body{
       margin:0;
-      padding:0;
-      overflow:hidden;
-      overscroll-behavior: none;
-      -webkit-text-size-adjust: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    }
-
-    .app{
-      height: var(--app-h, 100vh);
-      display:flex;
-      flex-direction:column;
-      background:
-        radial-gradient(1200px 800px at 40% -10%, rgba(255,45,134,.20), transparent 60%),
-        radial-gradient(900px 600px at 110% 10%, rgba(168,85,247,.16), transparent 60%),
-        var(--bg);
-    }
-
-    .topbar{
-      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      flex: 0 0 auto;
-    }
-    .brand{
-      font-weight:950; letter-spacing:.2px;
-      display:flex; align-items:center; gap:10px;
-      min-width: 0;
-    }
-    .dot{
-      width:9px; height:9px; border-radius:999px;
-      background:var(--pink);
-      box-shadow:0 0 0 4px rgba(255,45,134,.15);
-      flex: 0 0 auto;
-    }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px; border:1px solid var(--border);
-      background:rgba(255,255,255,.03); color:var(--muted); font-size:12px;
-      max-width: 48vw;
-      overflow:hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .headerDate{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
-      font-weight:900;
-      font-size:28px;
-      margin:0 0 8px;
-    }
-    .headerDate .dow{ color:var(--pink2); }
-    .dateRow{ display:flex; gap:8px; flex-wrap:wrap; }
-    .dateRow > *{ flex:1 1 120px; min-width:0; }
-    .miniBtn{ width:auto; min-width:34px; padding:8px 10px; font-size:14px; border-radius:10px; }
-    .logItem{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.06); }
-    .logItem:last-child{ border-bottom:none; }
-    .iconBtns{ display:flex; gap:6px; }
-    .nutriProgress{ display:grid; gap:10px; }
-    .meter{ display:grid; gap:6px; }
-    .meterTop{ display:flex; justify-content:space-between; font-size:13px; color:var(--muted); }
-    .meterBar{ height:9px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; }
-    .meterBar > span{ display:block; height:100%; border-radius:999px; }
-    .inlineActions{ display:flex; gap:8px; flex:0 0 auto; }
-    .summaryGrid{ display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:8px; }
-    .small{ font-size:13px; }
-    .mono{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
-
-    .content{
-      flex: 1 1 auto;
-      overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 0 14px calc(14px + env(safe-area-inset-bottom));
-      touch-action: manipulation;
-    }
-    .content.no-scroll{
-      overflow:hidden;
-    }
-
-    .card{
-      background: var(--card);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:14px;
-      box-shadow:var(--shadow);
-      margin-bottom:12px;
-    }
-    .card h2{ margin:0 0 10px 0; font-size:16px; letter-spacing:.2px; }
-    .muted{ color:var(--muted); font-size:13px; line-height:1.35; }
-    .err{ color:var(--bad); font-weight:900; }
-
-    .row{ display:flex; gap:10px; align-items:center; }
-    .row > *{ flex:1; }
-
-    /* ✅ iOS zoom fix: font-size >= 16px */
-    input, select, textarea, button{ font-size:16px; }
-
-    input, select, textarea{
-      width:100%;
-      padding:12px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(255,255,255,.03);
+      background:var(--bg);
       color:var(--text);
-      outline:none;
+      font-family:Inter,system-ui,-apple-system,sans-serif;
     }
-    textarea{ min-height:110px; resize:vertical; }
-
-    button{
-      width:100%;
-      padding:12px;
-      border-radius:14px;
-      border:1px solid transparent;
-      background:rgba(255,255,255,.06);
-      color:var(--text);
-      font-weight:850;
-      cursor:pointer;
-      transition: .12s ease;
+    .app{max-width:820px;margin:0 auto;padding:16px 14px 28px;}
+    h1{margin:0 0 12px;font-size:26px}
+    .subtitle{color:var(--muted);margin-bottom:12px}
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+    button,input,select{font-size:16px}
+    .tab,.btn{
+      padding:10px 12px;border-radius:12px;border:1px solid var(--border);
+      background:#1a1326;color:var(--text);font-weight:700;cursor:pointer;
     }
-    button:active{ filter: brightness(1.05); }
-    button:disabled{ opacity:.55; cursor:not-allowed; }
-
-    .btn-pink{
-      background: linear-gradient(180deg, rgba(255,45,134,.95), rgba(255,45,134,.75));
-      border-color: rgba(255,45,134,.35);
-      box-shadow: 0 10px 24px rgba(255,45,134,.18);
+    .tab.active{background:linear-gradient(180deg,var(--accent),var(--accent-soft));color:#f5f3ff}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}
+    .card h2{margin:0 0 10px;font-size:16px}
+    .grid{display:grid;gap:8px}
+    .grid.two{grid-template-columns:1fr 1fr}
+    input,select{
+      width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);
+      background:#120f1c;color:var(--text);
     }
-    .btn-ghost{
-      background: rgba(255,255,255,.04);
-      border-color: var(--border);
-      color: var(--muted);
-    }
-    .btn-danger{
-      background: rgba(255,77,77,.14);
-      border-color: rgba(255,77,77,.25);
-    }
-
-    .divider{ height:1px; background:rgba(255,255,255,.06); margin:12px 0; }
-
-    .pin{
-      font-size:30px;
-      letter-spacing:6px;
-      font-weight:950;
-      text-align:center;
-      padding:10px 0;
-      color:var(--pink2);
-      text-shadow:0 0 18px rgba(255,102,176,.25);
-      user-select: all;
-    }
-
-    .tabs{
-      flex: 0 0 auto;
-      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-      background: rgba(11,11,16,.96);
-      border-top:1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(10px);
-      display:flex;
-      gap:12px;
-      overflow-x:auto;
-    }
-    .tabbtn{
-      flex:1;
-      min-width:110px;
-      padding:14px 10px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color: var(--muted);
-      font-weight:950;
-      font-size:14px;
-      letter-spacing:.2px;
-    }
-    .tabbtn.active{
-      background: rgba(255,45,134,.22);
-      border-color: rgba(255,45,134,.50);
-      color: var(--text);
-      box-shadow: 0 10px 20px rgba(255,45,134,.10);
-    }
-    .hidden{ display:none !important; }
-
-    .board{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-      width:100%;
-    }
-    @media (max-width: 430px){
-      .board{ grid-template-columns: 1fr; }
-    }
-
-    .col{
-      background: rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      border-radius:16px;
-      overflow:hidden;
-      min-width:0;
-    }
-    .colhead{
-      padding:10px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      background: rgba(255,255,255,.02);
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .who{
-      display:flex; align-items:center; gap:10px;
-      font-weight:950;
-      min-width:0;
-    }
-    .avatar{
-      width:34px; height:34px; border-radius:12px;
-      background: rgba(255,45,134,.14);
-      border:1px solid rgba(255,45,134,.28);
-      display:flex; align-items:center; justify-content:center;
-      font-weight:950; color: var(--pink2);
-      flex:0 0 auto;
-    }
-    .who .names{ min-width:0; }
-    .who .names .t{
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      max-width: 100%;
-    }
-    .who small{
-      display:block; font-weight:700; font-size:12px; color:var(--muted); margin-top:2px;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      max-width: 100%;
-    }
-
-    .daywrap{
-      position:relative;
-      height:auto;
-      overflow:visible;
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-      touch-action: pan-y;
-    }
-    .daygrid{
-      position:relative;
-      height: var(--day-height, 1200px);
-      min-height: var(--day-height, 1200px);
-      pointer-events:none;
-    }
-    .hline{
-      position:absolute;
-      left:0; right:0;
-      height:1px;
-      background: rgba(255,255,255,.06);
-    }
-    .hlabel{
-      position:absolute;
-      left:10px;
-      height:18px;
-      line-height:18px;
-      font-size:11px;
-      color: rgba(244,244,255,.42);
-      background: rgba(11,11,16,.70);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:999px;
-      padding:0 8px;
-      pointer-events:none;
-    }
-
-    .event{
-      position:absolute;
-      left:56px;
-      right:10px;
-      border-radius:14px;
-      padding:6px 8px;
-      border:1px solid rgba(255,255,255,.14);
-      box-shadow: 0 10px 18px rgba(0,0,0,.35);
-      cursor:pointer;
-      overflow:hidden;
-      -webkit-tap-highlight-color: transparent;
-      pointer-events:auto;
-      touch-action: pan-y;
-    }
-    .event .tt{
-      font-weight:950;
-      font-size:11px;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      margin-bottom:3px;
-    }
-    .event .ss{
-      font-size:10px;
-      color: rgba(244,244,255,.78);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .event.any{ top: 10px; height: 70px; }
-    .event.approx{ border-style:dashed; }
-
-    .notesBox .noteItem{
-      padding:10px;
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:14px;
-      background: rgba(255,255,255,.03);
-      margin-bottom:10px;
-    }
-    .notesBox .noteMeta{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      color: var(--muted);
-      font-size:12px;
-      margin-bottom:6px;
-    }
-
-    .backdrop{
-      position:fixed;
-      inset:0;
-      background: var(--bg);
-      display:none;
-      z-index:2000;
-      overflow:auto;
-      -webkit-overflow-scrolling: touch;
-      padding:12px;
-    }
-    .modal{
-      max-width:620px;
-      margin:0 auto;
-      background: var(--card);
-      border:1px solid var(--border);
-      border-radius:20px;
-      box-shadow:var(--shadow);
-      padding:14px;
-    }
-    .modalhead{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      margin-bottom:10px;
-    }
-    .modalhead h3{ margin:0; font-size:15px; font-weight:950; }
-    .closeX{
-      width:42px; height:42px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.03);
-      color: var(--muted);
-      font-size:18px;
-      cursor:pointer;
-    }
-
-    .colors{ display:flex; gap:10px; flex-wrap:wrap; }
-    .colorbtn{
-      width:42px; height:42px; border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      cursor:pointer; position:relative;
-    }
-    .colorbtn.sel::after{
-      content:"";
-      position:absolute; inset:10px;
-      border-radius:10px;
-      border:2px solid rgba(255,255,255,.85);
-    }
-
-    .seg{
-      display:flex;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .seg button{
-      flex:1;
-      padding:10px 10px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.04);
-      color: var(--muted);
-      font-weight:950;
-    }
-    .seg button.active{
-      background: rgba(255,45,134,.20);
-      border-color: rgba(255,45,134,.45);
-      color: var(--text);
-    }
-
-    body.screen-schedule .card{
-      padding:12px;
-    }
-    body.screen-schedule .notesBox .noteItem{
-      padding:8px;
-    }
-
-    body.compact{
-      --day-height: 520px;
-    }
-    body.compact.screen-schedule .card{
-      padding:10px;
-    }
-    body.compact.screen-schedule .colhead{
-      padding:8px;
-    }
-    body.compact.screen-schedule .event{
-      padding:5px 7px;
-    }
-    body.compact.screen-schedule .event .tt{
-      font-size:10px;
-    }
-    body.compact.screen-schedule .event .ss{
-      font-size:9px;
-    }
-
-    @media (max-width: 430px){
-      :root{ --day-height: 540px; }
-      .topbar{ padding-left:12px; padding-right:12px; }
-      .content{ padding-left:12px; padding-right:12px; }
-      .tabs{ gap:8px; padding-left:12px; padding-right:12px; }
-      .tabbtn{ min-width:96px; padding:12px 8px; font-size:13px; }
-      .card{ border-radius:14px; padding:12px; }
-      .row{ gap:8px; }
-      .headerDate{ font-size:24px; }
-      .summaryGrid{ grid-template-columns: 1fr; }
-    }
+    .row{display:flex;gap:8px;align-items:center}
+    .btn{width:100%}
+    .btn.secondary{background:#120f1c}
+    .btn.danger{background:#3a1119;border-color:#6b1f2b;color:#ff9cab}
+    .hidden{display:none}
+    .small{font-size:13px;color:var(--muted)}
+    .list{display:grid;gap:8px}
+    .item{border:1px solid var(--border);border-radius:12px;padding:10px;background:#0b0a10}
+    .itemTop{display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .muted{color:var(--muted)}
+    .message{padding:10px;border-radius:10px;background:#1a1326;border:1px solid var(--border);margin-bottom:10px}
   </style>
 </head>
-
 <body>
   <div class="app">
-    <div class="topbar">
-      <div class="brand">
-        <span class="dot"></span>
-        <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Shared Schedule</span>
+    <h1>Трекер КБЖУ и тренировок</h1>
+    <div class="subtitle">Оставлены только нужные модули: питание/вода и тренировки.</div>
+    <div id="msg" class="message hidden"></div>
+    <div class="tabs">
+      <button id="tabNutrition" class="tab active">КБЖУ и вода</button>
+      <button id="tabTraining" class="tab">Тренировки</button>
+    </div>
+
+    <section id="screenNutrition">
+      <div class="card">
+        <h2>Дата</h2>
+        <input id="nutDate" type="date" />
       </div>
-    </div>
+      <div class="card">
+        <h2>Итоги за день</h2>
+        <div id="totals" class="small">ккал: 0 · белки: 0 · жиры: 0 · углеводы: 0</div>
+      </div>
+      <div class="card">
+        <h2>Вода и вес</h2>
+        <div class="grid two">
+          <div>
+            <label class="small">Вес, кг</label>
+            <input id="weight" placeholder="70" />
+          </div>
+          <div>
+            <label class="small">Вода, мл</label>
+            <input id="water" placeholder="2000" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="saveWeight" class="btn secondary">Сохранить вес</button>
+          <button id="saveWater" class="btn secondary">Сохранить воду</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Добавить прием пищи</h2>
+        <div class="grid">
+          <select id="foodSelect"><option value="">Выбрать из продуктов</option></select>
+          <input id="entryName" placeholder="Название (если без шаблона)" />
+          <div class="grid two">
+            <input id="grams" placeholder="Граммы" />
+            <input id="kcal" placeholder="Ккал/100" />
+            <input id="protein" placeholder="Белки/100" />
+            <input id="fat" placeholder="Жиры/100" />
+            <input id="carbs" placeholder="Углеводы/100" />
+          </div>
+          <button id="addEntry" class="btn">Добавить в дневник</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Записи питания</h2>
+        <div id="entries" class="list"></div>
+      </div>
+    </section>
 
-    <div class="content">
-      <div id="app"></div>
-    </div>
-
-    <div class="tabs hidden" id="tabs">
-      <button class="tabbtn" id="tabSchedule">Schedule</button>
-      <button class="tabbtn" id="tabCreate">Create</button>
-      <button class="tabbtn" id="tabNutrition">Nutrition</button>
-      <button class="tabbtn" id="tabTraining">Training</button>
-      <button class="tabbtn" id="tabProfile">Profile</button>
-    </div>
+    <section id="screenTraining" class="hidden">
+      <div class="card">
+        <h2>Дата тренировки</h2>
+        <input id="trainDate" type="date" />
+      </div>
+      <div class="card">
+        <h2>Добавить подход</h2>
+        <div class="grid">
+          <select id="exerciseSelect"><option value="">Новое упражнение</option></select>
+          <input id="exerciseName" placeholder="Название упражнения" />
+          <input id="exerciseCategory" placeholder="Категория" />
+          <div class="grid two">
+            <input id="setWeight" placeholder="Вес, кг" />
+            <input id="setReps" placeholder="Повторы" />
+          </div>
+          <input id="setsCount" placeholder="Количество подходов" value="1" />
+          <button id="addSet" class="btn">Сохранить тренировку</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Тренировки за день</h2>
+        <div id="workouts" class="list"></div>
+      </div>
+    </section>
   </div>
 
-  <!-- Fullscreen event note modal -->
-  <div class="backdrop" id="eventBackdrop">
-    <div class="modal">
-      <div class="modalhead">
-        <h3 id="eventTitle">Событие</h3>
-        <button class="closeX" id="eventClose">✕</button>
-      </div>
-
-      <div class="card" style="margin:0; box-shadow:none;">
-        <div id="eventMeta" class="muted" style="margin-bottom:10px;"></div>
-
-        <div class="row" style="margin-bottom:10px;">
-          <button class="btn-ghost" id="btnEditSeries">Редактировать событие</button>
-          <button class="btn-ghost" id="btnAddEventNote">Добавить заметку к событию</button>
-          <button class="btn-danger" id="btnDeleteSeries">Удалить событие</button>
-        </div>
-
-        <div id="editEventBox" class="hidden" style="margin-bottom:10px;">
-          <div class="row" style="margin-bottom:8px;">
-            <input id="editTitle" placeholder="Название" />
-            <select id="editTimeKind">
-              <option value="exact">Exact</option>
-              <option value="approx">Approx</option>
-              <option value="anytime">Anytime</option>
-            </select>
-          </div>
-          <div class="row" style="margin-bottom:8px;">
-            <input id="editStart" placeholder="Начало (HH:MM)" />
-            <input id="editEnd" placeholder="Конец (HH:MM)" />
-          </div>
-          <div class="row" style="margin-bottom:8px;">
-            <select id="editColor"></select>
-            <button class="btn-pink" id="btnSaveSeriesEdit">Сохранить</button>
-          </div>
-        </div>
-
-        <div id="addEventNoteBox" class="hidden">
-          <textarea id="eventNoteText" placeholder="Заметка к событию (видна обоим)"></textarea>
-          <button class="btn-pink" id="btnSendEventNote">Отправить</button>
-        </div>
-
-        <div class="divider"></div>
-        <div class="muted" style="margin-bottom:8px;">Заметки к этому событию (на дату):</div>
-        <div id="eventNotesList" class="muted"></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const tg = window.Telegram?.WebApp;
-
-    function applyTelegramViewport(){
-      if(!tg) return;
-      tg.ready();
-      tg.expand();
-
-      const apply = ()=>{
-        const h = tg.viewportStableHeight || window.innerHeight;
-        document.documentElement.style.setProperty('--app-h', h + 'px');
-      };
-
-      apply();
-      tg.onEvent('viewportChanged', apply);
-    }
-
-    applyTelegramViewport();
-
-    function getCss(varName){
-      return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-    }
-
-    function getDayHeight(){
-      const raw = getCss("--day-height");
-      const val = Number.parseFloat(raw);
-      return Number.isFinite(val) && val > 0 ? val : 580;
-    }
-
-    const COLORS = [
-      { id:"c1", hex:getCss("--c1") },
-      { id:"c2", hex:getCss("--c2") },
-      { id:"c3", hex:getCss("--c3") },
-      { id:"c4", hex:getCss("--c4") },
-      { id:"c5", hex:getCss("--c5") },
-      { id:"c6", hex:getCss("--c6") },
-    ];
-
-    const state = {
-      me: null,
-      lastPin: null,
-      error: null,
-
-      screen: "boot", // boot | pair | schedule | create | nutrition | training | profile
-      date: todayISO(),
-      dayData: null,
-      since: null,
-      pollTimer: null,
-      actionLock: false,
-
-      weeklyMask: 0,
-      compact: localStorage.getItem("compactMode") === "1",
-
-      createMode: "event", // event | note
-      form: {
-        title: "",
-        timeKind: "exact",
-        start: "09:00",
-        end: "18:00",
-        recurrence: "none",
-        singleDate: todayISO(),
-        everyXDays: "4",
-        cycleAnchor: todayISO(),
-        color: "c1"
-      },
-
-      noteForm: {
-        date: todayISO(),
-        text: ""
-      },
-
-      selectedEvent: null,
-
-      nutrition: {
-        date: todayISO(),
-        foods: [],
-        entries: [],
-        totals: { kcal: 0, protein: 0, fat: 0, carbs: 0 },
-        stats: { weightKg: null, waterMl: null },
-        goals: JSON.parse(localStorage.getItem("nutritionGoals") || '{"kcal":2000,"protein":140,"fat":70,"carbs":220}'),
-        weightLocked: false,
-        waterLocked: false,
-        showAddForm: false,
-        entryForm: { foodId: "custom", name: "", grams: "", kcal: "", protein: "", fat: "", carbs: "" },
-      },
-
-      training: {
-        date: todayISO(),
-        exercises: [],
-        dayItems: [],
-        showAddForm: true,
-        exerciseForm: { name: "", category: "" },
-        setForm: { exerciseId: "", exerciseName: "", category: "", weight: "", reps: "", setsCount: "1" },
-        history: {}
-      }
-    };
-
-    function realPaired(){
-      return state.me?.membersCount === 2 && state.me?.paired === true;
-    }
-
-    function applyCompactMode(){
-      document.body.classList.toggle("compact", state.compact);
-      localStorage.setItem("compactMode", state.compact ? "1" : "0");
-    }
-
-    function apiFetch(path, options = {}) {
-      if (!tg || !tg.initData) throw new Error("Telegram WebApp initData not found");
-      const headers = Object.assign({}, options.headers || {}, {
-        "Content-Type": "application/json",
-        "X-TG-INIT-DATA": tg.initData
-      });
-      return fetch(path, Object.assign({}, options, { headers }));
-    }
-
-    function setPill(_text){}
-
-    function todayISO(){
-      const d = new Date();
-      return d.toISOString().slice(0,10);
-    }
-    function addDays(dateISO, delta){
-      const d = new Date(dateISO + "T00:00:00");
-      d.setDate(d.getDate() + delta);
-      return d.toISOString().slice(0,10);
-    }
-    function fmtDow(dateISO){
-      const d = new Date(dateISO + "T00:00:00");
-      const days = ["ВС","ПН","ВТ","СР","ЧТ","ПТ","СБ"];
-      return days[d.getDay()];
-    }
-    function fmtRuDate(dateISO){
-      const d = new Date(dateISO + "T00:00:00");
-      return d.toLocaleDateString("ru-RU", { day:"numeric", month:"short", year:"numeric" }).replace(" г.", "");
-    }
-    function calcPercent(value, goal){
-      const g = Number(goal || 0);
-      if(g <= 0) return 0;
-      return Math.max(0, Math.min(100, (Number(value || 0) / g) * 100));
-    }
-
-    function hmToMin(hm){
-      const m = /^(\d{1,2}):(\d{2})$/.exec(String(hm||"").trim());
-      if(!m) return null;
-      const h = Number(m[1]), mi = Number(m[2]);
-      if(h<0||h>23||mi<0||mi>59) return null;
-      return h*60+mi;
-    }
-    function minToHm(min){
-      if(min===null || min===undefined) return "—";
-      const h = Math.floor(min/60);
-      const m = min%60;
-      return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
-    }
-    function fmtNum(n){
-      return Number(n || 0).toFixed(1);
-    }
-    function colorHex(id){
-      return (COLORS.find(c=>c.id===id)?.hex) || getCss("--pink");
-    }
-
-    function myId(){ return state.me?.tgUserId; }
-    function otherId(){ return state.me?.otherUserId; }
-
-    function toast(msg){
-      state.error = msg;
-      render();
-      setTimeout(()=>{ state.error=null; render(); }, 2200);
-    }
-
-    function stopPolling(){
-      if(state.pollTimer) clearInterval(state.pollTimer);
-      state.pollTimer = null;
-    }
-    function startPolling(){
-      stopPolling();
-      state.pollTimer = setInterval(async ()=>{
-        if(state.screen === "schedule" || state.screen === "profile"){
-          await loadDay(false);
-        }
-      }, 4500);
-    }
-
-    async function loadMe(){
-      try{
-        const res = await apiFetch("/api/me");
-        const data = await res.json();
-        state.me = data;
-
-        setPill(realPaired() ? "paired" : "need pairing");
-
-        if(!realPaired()){
-          state.screen = "pair";
-          document.getElementById("tabs").classList.add("hidden");
-          stopPolling();
-        } else {
-          document.getElementById("tabs").classList.remove("hidden");
-          if(state.screen === "boot" || state.screen === "pair") state.screen = "schedule";
-        }
-      } catch(e){
-        setPill("error");
-        state.error = e.message;
-      }
-    }
-
-    async function loadDay(resetSince=false){
-      if(!realPaired()) return;
-
-      try{
-        const qs = new URLSearchParams({ date: state.date });
-        if(!resetSince && state.since) qs.set("since", state.since);
-
-        const res = await apiFetch("/api/day?"+qs.toString());
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "day_failed");
-
-        if(!state.dayData || resetSince){
-          state.dayData = data;
-        } else {
-          state.dayData.serverTime = data.serverTime;
-          const map = new Map((state.dayData.events||[]).map(e=>[e.eventKey,e]));
-          for(const e of (data.events||[])) map.set(e.eventKey, e);
-          state.dayData.events = Array.from(map.values());
-
-          state.dayData.notes = (state.dayData.notes||[]).concat(data.notes||[]);
-          state.dayData.dayNotes = (state.dayData.dayNotes||[]).concat(data.dayNotes||[]);
-          state.dayData.members = data.members || state.dayData.members;
-        }
-        state.since = data.serverTime;
-      } catch(e){
-        state.error = e.message;
-      }
-
-      if(state.screen === "schedule" || state.screen === "profile"){
-        render();
-      }
-    }
-
-    async function loadNutritionFoods(){
-      const res = await apiFetch("/api/nutrition/foods");
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "foods_failed");
-      state.nutrition.foods = data.foods || [];
-    }
-
-    async function loadNutritionDay(){
-      const date = state.nutrition.date;
-      const res = await apiFetch(`/api/nutrition/day?date=${encodeURIComponent(date)}`);
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "nutrition_day_failed");
-      state.nutrition.entries = data.entries || [];
-      state.nutrition.totals = data.totals || { kcal:0, protein:0, fat:0, carbs:0 };
-    }
-
-    async function loadStatsDay(){
-      const date = state.nutrition.date;
-      const res = await apiFetch(`/api/stats/day?date=${encodeURIComponent(date)}`);
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "stats_failed");
-      state.nutrition.stats = {
-        weightKg: data.weightKg ?? null,
-        waterMl: data.waterMl ?? null
-      };
-      state.nutrition.weightLocked = data.weightKg !== null && data.weightKg !== undefined;
-      state.nutrition.waterLocked = data.waterMl !== null && data.waterMl !== undefined;
-    }
-
-    async function ensureNutritionData(){
-      await Promise.all([loadNutritionFoods(), loadNutritionDay(), loadStatsDay()]);
-    }
-
-    async function createFoodFromEntry(){
-      const f = state.nutrition.entryForm;
-      if(!f.name.trim()) throw new Error("Укажи название блюда");
-      const payload = {
-        name: f.name.trim(),
-        baseGrams: 100,
-        kcal: Number(f.kcal),
-        protein: Number(f.protein),
-        fat: Number(f.fat),
-        carbs: Number(f.carbs)
-      };
-      const res = await apiFetch("/api/nutrition/food", {
-        method:"POST",
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "food_create_failed");
-      await loadNutritionFoods();
-      return data.id;
-    }
-
-    async function addNutritionEntry(){
-      const f = state.nutrition.entryForm;
-      const payload = {
-        date: state.nutrition.date,
-        grams: Number(f.grams || 0)
-      };
-      if(f.foodId && f.foodId !== "custom"){
-        payload.foodId = Number(f.foodId);
-      } else {
-        const foodId = await createFoodFromEntry();
-        payload.foodId = Number(foodId);
-        payload.name = f.name.trim();
-        payload.kcal = Number(f.kcal);
-        payload.protein = Number(f.protein);
-        payload.fat = Number(f.fat);
-        payload.carbs = Number(f.carbs);
-      }
-      const res = await apiFetch("/api/nutrition/entry", {
-        method:"POST",
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "entry_add_failed");
-      await loadNutritionDay();
-      render();
-    }
-
-    async function updateEntryGrams(entryId, grams){
-      const res = await apiFetch(`/api/nutrition/entry/${entryId}`, {
-        method:"PUT",
-        body: JSON.stringify({ grams: Number(grams) })
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "entry_update_failed");
-      await loadNutritionDay();
-      render();
-    }
-
-    async function deleteEntry(entryId){
-      const res = await apiFetch(`/api/nutrition/entry/${entryId}`, { method:"DELETE" });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "entry_delete_failed");
-      await loadNutritionDay();
-      render();
-    }
-
-    async function saveWeight(){
-      const value = document.getElementById("weightInput").value;
-      const res = await apiFetch("/api/stats/weight", {
-        method:"PUT",
-        body: JSON.stringify({ date: state.nutrition.date, kg: Number(value) })
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "weight_failed");
-      await loadStatsDay();
-      state.nutrition.weightLocked = true;
-      render();
-    }
-
-    async function saveWater(){
-      const value = document.getElementById("waterInput").value;
-      const res = await apiFetch("/api/stats/water", {
-        method:"PUT",
-        body: JSON.stringify({ date: state.nutrition.date, ml: Number(value) })
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "water_failed");
-      await loadStatsDay();
-      state.nutrition.waterLocked = true;
-      render();
-    }
-
-    function saveNutritionGoals(){
-      localStorage.setItem("nutritionGoals", JSON.stringify(state.nutrition.goals));
-      render();
-    }
-
-    async function loadExercises(){
-      const res = await apiFetch("/api/training/exercises");
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "exercises_failed");
-      state.training.exercises = data.exercises || [];
-    }
-
-    async function loadTrainingDay(){
-      const date = state.training.date;
-      const res = await apiFetch(`/api/training/day?date=${encodeURIComponent(date)}`);
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "training_day_failed");
-      state.training.dayItems = data.items || [];
-    }
-
-    async function ensureTrainingData(){
-      await Promise.all([loadExercises(), loadTrainingDay()]);
-    }
-
-    async function createExerciseFromSet(){
-      const f = state.training.setForm;
-      const res = await apiFetch("/api/training/exercise", {
-        method:"POST",
-        body: JSON.stringify({ name: f.exerciseName.trim(), category: f.category.trim() })
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "exercise_create_failed");
-      await loadExercises();
-      return data.id;
-    }
-
-    async function addWorkoutSet(){
-      const f = state.training.setForm;
-      if(!f.exerciseId && !f.exerciseName.trim()){
-        throw new Error("Укажи упражнение");
-      }
-      const payload = {
-        date: state.training.date,
-        exerciseId: Number(f.exerciseId),
-        weight: Number(f.weight),
-        reps: Number(f.reps),
-        setsCount: Number(f.setsCount || 1)
-      };
-      if(!payload.exerciseId){
-        payload.exerciseId = Number(await createExerciseFromSet());
-      }
-      const res = await apiFetch("/api/training/workout", {
-        method:"POST",
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "workout_failed");
-      f.weight = ""; f.reps = ""; f.setsCount = "1";
-      await loadTrainingDay();
-      render();
-    }
-
-    async function loadExerciseHistory(exerciseId){
-      const res = await apiFetch(`/api/training/exercise/${exerciseId}/history`);
-      const data = await res.json();
-      if(!res.ok) throw new Error(data.error || "history_failed");
-      state.training.history[exerciseId] = data.history || [];
-      render();
-    }
-
-    async function createPair(){
-      state.error=null; state.lastPin=null;
-      render();
-      try{
-        const res = await apiFetch("/api/space/create", { method:"POST", body:"{}" });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "create_failed");
-        state.lastPin = data.pin;
-      }catch(e){ state.error = e.message; }
-      render();
-    }
-
-    async function joinPair(pin){
-      state.error=null;
-      render();
-      try{
-        const res = await apiFetch("/api/space/join", {
-          method:"POST",
-          body: JSON.stringify({ pin })
-        });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "join_failed");
-
-        await loadMe();
-        if(realPaired()){
-          await loadDay(true);
-          startPolling();
-        } else {
-          toast("Похоже второй ещё не подключился.");
-        }
-      }catch(e){ state.error = e.message; }
-      render();
-    }
-
-    async function leaveSpaceFrontend(){
-      try{
-        const res = await apiFetch("/api/space/leave", { method:"POST", body:"{}" });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "leave_failed");
-        toast("Ок: вышел из space");
-        state.lastPin = null;
-        state.dayData = null;
-        state.since = null;
-        await loadMe();
-        render();
-      }catch(e){
-        toast("Ошибка: " + e.message);
-      }
-    }
-
-    async function resetSpaceFrontend(){
-      try{
-        const res = await apiFetch("/api/space/reset", { method:"POST", body:"{}" });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "reset_failed");
-        toast("Ок: space сброшен");
-        state.lastPin = null;
-        state.dayData = null;
-        state.since = null;
-        await loadMe();
-        render();
-      }catch(e){
-        toast("Ошибка: " + e.message);
-      }
-    }
-
-    function copyText(text){
-      if(!text) return;
-      navigator.clipboard?.writeText(text);
-      tg?.showPopup?.({ title:"Скопировано", message:text });
-    }
-
-    function eventsFor(userId){
-      const all = state.dayData?.events || [];
-      return all.filter(e => String(e.ownerTgUserId) === String(userId));
-    }
-
-    function makeTimeLabel(e){
-      if(e.timeKind === "anytime") return "Anytime";
-      const a = minToHm(e.startMin);
-      const b = minToHm(e.endMin);
-      return (e.timeKind === "approx" ? "~ " : "") + a + "–" + b;
-    }
-
-    function renderColumn(elId, userId, label){
-      const el = document.getElementById(elId);
-      const evs = eventsFor(userId);
-
-      let html = `
-        <div class="col">
-          <div class="colhead">
-            <div class="who">
-              <div class="avatar">${escapeHtml(label.slice(0,1).toUpperCase())}</div>
-              <div class="names">
-                <div class="t">${escapeHtml(label)}</div>
-                
-              </div>
-            </div>
-            <span class="pill">${escapeHtml(String(evs.length))} events</span>
-          </div>
-
-          <div class="daywrap">
-            <div class="daygrid" style="height:${getDayHeight()}px; min-height:${getDayHeight()}px;">
-      `;
-
-      const labelHeight = 18;
-      const scale = getDayHeight() / 1440;
-      for(let h=0; h<=24; h++){
-        const top = h*60*scale;
-        html += `<div class="hline" style="top:${top}px"></div>`;
-        if(h<24){
-          html += `<div class="hlabel" style="top:${top + 1 - labelHeight / 2}px">${escapeHtml(String(h).padStart(2,"0")+":00")}</div>`;
-        }
-      }
-
-      for(const e of evs){
-        let top = 10 * scale;
-        let height = Math.max(34, 70 * scale);
-        let cls = "event any";
-        if(e.timeKind !== "anytime"){
-          const s = Number(e.startMin ?? 0);
-          const en = Number(e.endMin ?? (s+60));
-          top = Math.max(0, Math.min(1440, s)) * scale;
-          height = Math.max(14, Math.min(1440, en - s) * scale);
-          cls = "event";
-          if(e.timeKind === "approx") cls += " approx";
-        }
-        const col = colorHex(e.color);
-        html += `
-          <div class="${cls}" data-key="${escapeHtml(e.eventKey)}"
-               style="top:${top}px; height:${height}px; background:${col}bb;">
-            <div class="tt">${escapeHtml(e.title)}</div>
-            <div class="ss">${escapeHtml(makeTimeLabel(e))}</div>
-          </div>
-        `;
-      }
-
-      html += `
-            </div>
-          </div>
-        </div>
-      `;
-
-      el.innerHTML = html;
-
-      el.querySelectorAll(".event").forEach(node=>{
-        node.addEventListener("click", ()=>{
-          const key = node.getAttribute("data-key");
-          const ev = (state.dayData?.events||[]).find(x=>x.eventKey===key);
-          if(ev) openEventDetails(ev);
-        });
-      });
-    }
-
-    function openEventModal(){ document.getElementById("eventBackdrop").style.display = "block"; }
-    function closeEventModal(){
-      document.getElementById("eventBackdrop").style.display = "none";
-      document.getElementById("addEventNoteBox").classList.add("hidden");
-      document.getElementById("eventNoteText").value = "";
-      state.selectedEvent = null;
-    }
-
-    function openEventDetails(ev){
-      state.selectedEvent = ev;
-      document.getElementById("eventTitle").textContent = ev.title;
-      const owner = String(ev.ownerTgUserId) === String(myId()) ? "you" : "partner";
-      document.getElementById("eventMeta").innerHTML = `
-        <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.date))}</span><span class="dow">${escapeHtml(fmtDow(state.date))}</span></div>
-        <div class="pill">Время: <span class="mono">${escapeHtml(makeTimeLabel(ev))}</span></div>
-        <div class="pill">Owner: <span class="mono">${escapeHtml(owner)}</span></div>
-      `;
-
-      const editBox = document.getElementById("editEventBox");
-      editBox.classList.add("hidden");
-      document.getElementById("editTitle").value = ev.title || "";
-      document.getElementById("editTimeKind").value = ev.timeKind || "exact";
-      document.getElementById("editStart").value = minToHm(ev.startMin);
-      document.getElementById("editEnd").value = minToHm(ev.endMin);
-      document.getElementById("editStart").disabled = ev.timeKind === "anytime";
-      document.getElementById("editEnd").disabled = ev.timeKind === "anytime";
-      const colorSel = document.getElementById("editColor");
-      colorSel.innerHTML = COLORS.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.id)}</option>`).join("");
-      colorSel.value = ev.color || "c1";
-
-      const notes = (state.dayData?.notes||[]).filter(n => Number(n.seriesId) === Number(ev.seriesId));
-      const list = notes.map(n=>{
-        const who = String(n.authorTgUserId)===String(myId()) ? "you" : "partner";
-        return `<div class="pill" style="margin:8px 0;">
-          <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
-          <b>${escapeHtml(who)}</b>: ${escapeHtml(n.text)}
-        </div>`;
-      }).join("");
-      document.getElementById("eventNotesList").innerHTML = list || `<div class="muted">Пока нет.</div>`;
-
-      const delBtn = document.getElementById("btnDeleteSeries");
-      const editBtn = document.getElementById("btnEditSeries");
-      if(String(ev.ownerTgUserId) !== String(myId())){
-        delBtn.disabled = true;
-        editBtn.disabled = true;
-        delBtn.textContent = "Удалить (только владелец)";
-      } else {
-        delBtn.disabled = false;
-        editBtn.disabled = false;
-        delBtn.textContent = "Удалить событие";
-      }
-
-      openEventModal();
-    }
-
-    async function sendEventNote(){
-      const ev = state.selectedEvent;
-      if(!ev) return;
-      const text = document.getElementById("eventNoteText").value.trim();
-      if(!text){ toast("Введите текст заметки"); return; }
-      try{
-        const res = await apiFetch("/api/note", {
-          method:"POST",
-          body: JSON.stringify({ seriesId: ev.seriesId, date: state.date, text })
-        });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "note_failed");
-        document.getElementById("eventNoteText").value = "";
-        document.getElementById("addEventNoteBox").classList.add("hidden");
-        await loadDay(true);
-        toast("Ок");
-      }catch(e){
-        toast("Ошибка: "+e.message);
-      }
-    }
-
-    async function deleteSeries(){
-      const ev = state.selectedEvent;
-      if(!ev) return;
-      if(String(ev.ownerTgUserId) !== String(myId())) return;
-      try{
-        const res = await apiFetch("/api/series/"+ev.seriesId, { method:"DELETE" });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "delete_failed");
-        closeEventModal();
-        await loadDay(true);
-        toast("Удалено");
-      }catch(e){
-        toast("Ошибка: "+e.message);
-      }
-    }
-
-    async function saveSeriesEdit(){
-      const ev = state.selectedEvent;
-      if(!ev) return;
-      if(String(ev.ownerTgUserId) !== String(myId())) return;
-      const title = document.getElementById("editTitle").value.trim();
-      const timeKind = document.getElementById("editTimeKind").value;
-      const start = document.getElementById("editStart").value;
-      const end = document.getElementById("editEnd").value;
-      const color = document.getElementById("editColor").value;
-      let startMin = null;
-      let endMin = null;
-      if(timeKind !== "anytime"){
-        startMin = hmToMin(start);
-        endMin = hmToMin(end);
-        if(startMin === null || endMin === null || startMin >= endMin){
-          toast("Проверь время");
-          return;
-        }
-      }
-      try{
-        const res = await apiFetch("/api/series/"+ev.seriesId, {
-          method:"PUT",
-          body: JSON.stringify({ title, color, timeKind, startMin, endMin })
-        });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "edit_failed");
-        document.getElementById("editEventBox").classList.add("hidden");
-        await loadDay(true);
-        closeEventModal();
-        toast("Сохранено");
-      }catch(e){
-        toast("Ошибка: "+e.message);
-      }
-    }
-
-    function buildColorRow(){
-      const row = document.getElementById("colorRow");
-      row.innerHTML = COLORS.map(c=>{
-        const sel = state.form.color === c.id ? "sel" : "";
-        return `<div class="colorbtn ${sel}" data-c="${c.id}" style="background:${c.hex};"></div>`;
-      }).join("");
-      row.querySelectorAll(".colorbtn").forEach(btn=>{
-        btn.addEventListener("click", ()=>{
-          state.form.color = btn.getAttribute("data-c");
-          buildColorRow();
-        });
-      });
-    }
-
-    function syncRecurrenceUI(){
-      const r = document.getElementById("fRecurrence")?.value;
-      const single = document.getElementById("fSingleDate");
-      const weekly = document.getElementById("weeklyBox");
-      const cycle = document.getElementById("cycleBox");
-
-      if(r === "none"){
-        single.disabled = false;
-        weekly.classList.add("hidden");
-        cycle.classList.add("hidden");
-      } else if(r === "weekly"){
-        single.disabled = true;
-        weekly.classList.remove("hidden");
-        cycle.classList.add("hidden");
-      } else if(r === "cycle"){
-        single.disabled = true;
-        weekly.classList.add("hidden");
-        cycle.classList.remove("hidden");
-      }
-    }
-
-    function setWeeklyBtnStyles(){
-      const box = document.getElementById("weeklyBox");
-      box.querySelectorAll("button[data-d]").forEach(b=>{
-        const d = Number(b.getAttribute("data-d"));
-        const on = (state.weeklyMask & (1<<d)) !== 0;
-        b.style.borderColor = on ? "rgba(255,45,134,.55)" : "var(--border)";
-        b.style.color = on ? "var(--text)" : "var(--muted)";
-        b.style.background = on ? "rgba(255,45,134,.22)" : "rgba(255,255,255,.04)";
-      });
-    }
-
-    function bindCreateInputs(){
-      const title = document.getElementById("fTitle");
-      const timeKind = document.getElementById("fTimeKind");
-      const start = document.getElementById("fStart");
-      const end = document.getElementById("fEnd");
-      const rec = document.getElementById("fRecurrence");
-      const single = document.getElementById("fSingleDate");
-      const cycP = document.getElementById("fEveryXDays");
-      const cycA = document.getElementById("fCycleAnchor");
-
-      title.value = state.form.title;
-      timeKind.value = state.form.timeKind;
-      start.value = state.form.start;
-      end.value = state.form.end;
-      rec.value = state.form.recurrence;
-      single.value = state.form.singleDate;
-      cycP.value = state.form.everyXDays;
-      cycA.value = state.form.cycleAnchor;
-
-      title.oninput = (e)=> state.form.title = e.target.value;
-      timeKind.onchange = (e)=> state.form.timeKind = e.target.value;
-      start.oninput = (e)=> state.form.start = e.target.value;
-      end.oninput = (e)=> state.form.end = e.target.value;
-      rec.onchange = (e)=>{ state.form.recurrence = e.target.value; syncRecurrenceUI(); };
-      single.oninput = (e)=> state.form.singleDate = e.target.value;
-      cycP.oninput = (e)=> state.form.everyXDays = e.target.value;
-      cycA.oninput = (e)=> state.form.cycleAnchor = e.target.value;
-
-      buildColorRow();
-      syncRecurrenceUI();
-      setWeeklyBtnStyles();
-
-      document.getElementById("weeklyBox").querySelectorAll("button[data-d]").forEach(b=>{
-        b.onclick = ()=>{
-          const d = Number(b.getAttribute("data-d"));
-          state.weeklyMask = state.weeklyMask ^ (1<<d);
-          setWeeklyBtnStyles();
-        };
-      });
-    }
-
-    async function saveEvent(){
-      const title = state.form.title.trim();
-      const timeKind = state.form.timeKind;
-      const recurrence = state.form.recurrence;
-
-      if(!title){ toast("Название обязательно"); return; }
-
-      let startMin=null, endMin=null;
-      if(timeKind !== "anytime"){
-        startMin = hmToMin(state.form.start);
-        endMin = hmToMin(state.form.end);
-        if(startMin===null || endMin===null){ toast("Время HH:MM"); return; }
-        if(startMin >= endMin){ toast("Начало < конца"); return; }
-      }
-
-      const body = {
-        title,
-        color: state.form.color,
-        timeKind,
-        startMin,
-        endMin,
-        recurrenceKind: recurrence,
-        singleDate: null,
-        weeklyMask: null,
-        cyclePattern: null,
-        cycleAnchorDate: null
-      };
-
-      if(recurrence === "none"){
-        const sd = state.form.singleDate.trim();
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(sd)){ toast("Дата YYYY-MM-DD"); return; }
-        body.singleDate = sd;
-      } else if(recurrence === "weekly"){
-        if(state.weeklyMask === 0){ toast("Выбери дни"); return; }
-        body.weeklyMask = state.weeklyMask;
-      } else if(recurrence === "cycle"){
-        const every = Number(state.form.everyXDays || 0);
-        const a = state.form.cycleAnchor.trim();
-        if(!Number.isInteger(every) || every < 2 || every > 31){ toast("X должен быть от 2 до 31"); return; }
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(a)){ toast("Anchor YYYY-MM-DD"); return; }
-        body.cyclePattern = "1" + "0".repeat(every - 1);
-        body.cycleAnchorDate = a;
-      }
-
-      try{
-        const res = await apiFetch("/api/series", { method:"POST", body: JSON.stringify(body) });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "save_failed");
-
-        toast("Событие добавлено");
-        state.screen = "schedule";
-        setActiveTab("schedule");
-        state.since = null;
-        await loadDay(true);
-      }catch(e){
-        toast("Ошибка: "+e.message);
-      }
-    }
-
-    async function saveDayNote(){
-      const date = state.noteForm.date.trim();
-      const text = state.noteForm.text.trim();
-      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ toast("Дата YYYY-MM-DD"); return; }
-      if(!text){ toast("Введите текст"); return; }
-
-      try{
-        const res = await apiFetch("/api/space/daynote", {
-          method:"POST",
-          body: JSON.stringify({ date, text })
-        });
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.error || "daynote_failed");
-        state.noteForm.text = "";
-        toast("Заметка добавлена");
-        state.date = date;
-        state.screen = "schedule";
-        setActiveTab("schedule");
-        state.since = null;
-        await loadDay(true);
-      }catch(e){
-        toast("Ошибка: "+e.message);
-      }
-    }
-
-    function setActiveTab(tab){
-      const s = document.getElementById("tabSchedule");
-      const c = document.getElementById("tabCreate");
-      const n = document.getElementById("tabNutrition");
-      const t = document.getElementById("tabTraining");
-      const p = document.getElementById("tabProfile");
-      [s,c,n,t,p].forEach(x=>x.classList.remove("active"));
-      if(tab==="schedule") s.classList.add("active");
-      if(tab==="create") c.classList.add("active");
-      if(tab==="nutrition") n.classList.add("active");
-      if(tab==="training") t.classList.add("active");
-      if(tab==="profile") p.classList.add("active");
-    }
-
-    function render(){
-      const root = document.getElementById("app");
-      const errLine = state.error ? `<div class="card"><div class="err">${escapeHtml(state.error)}</div></div>` : "";
-      document.body.classList.toggle("screen-schedule", state.screen === "schedule");
-      applyCompactMode();
-
-      if(!tg){
-        root.innerHTML = `<div class="card"><h2>Открой в Telegram</h2><div class="muted">Работает только внутри Telegram Mini App.</div></div>`;
-        return;
-      }
-
-      if(!state.me){
-        root.innerHTML = `
-          <div class="card">
-            <h2>Запуск…</h2>
-            <div class="muted">Получаю /api/me</div>
-            <div class="divider"></div>
-            <button class="btn-pink" id="btnReload">Обновить</button>
-          </div>
-          ${errLine}
-        `;
-        document.getElementById("btnReload").onclick = init;
-        return;
-      }
-
-      if(!realPaired()){
-        root.innerHTML = `
-          <div class="card">
-            <h2>Связь по PIN</h2>
-            <div class="muted">Связи нет — сначала подключи второго человека.</div>
-            <div class="divider"></div>
-            <div class="pill">you: <span class="mono">${escapeHtml(String(state.me.tgUserId))}</span></div>
-            <div style="height:8px;"></div>
-            <div class="pill">partner: <span class="mono">${escapeHtml(String(state.me.otherUserId || "—"))}</span></div>
-            <div style="height:8px;"></div>
-            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount ?? 0))}</span></div>
-          </div>
-
-          <div class="card">
-            <h2>Создать PIN</h2>
-            <button class="btn-pink" id="btnCreatePin">Создать PIN на 10 минут</button>
-            ${state.lastPin ? `
-              <div class="pin">${escapeHtml(state.lastPin)}</div>
-              <div class="row">
-                <button class="btn-ghost" id="btnCopyPin">Скопировать</button>
-                <button class="btn-ghost" id="btnRecheck">Я уже связал(а)</button>
-              </div>
-            ` : ``}
-          </div>
-
-          <div class="card">
-            <h2>Ввести PIN</h2>
-            <input id="pinInput" inputmode="numeric" maxlength="6" placeholder="6 цифр" />
-            <button class="btn-pink" id="btnJoinPin">Подключиться</button>
-          </div>
-
-          <div class="card">
-            <h2>Сбросить связь</h2>
-            <div class="muted">Удаляет тебя из space и позволяет начать pairing заново.</div>
-            <div class="divider"></div>
-            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
-          </div>
-
-          ${errLine}
-        `;
-
-        document.getElementById("tabs").classList.add("hidden");
-        stopPolling();
-
-        document.getElementById("btnCreatePin").onclick = createPair;
-        if(state.lastPin){
-          document.getElementById("btnCopyPin").onclick = ()=>copyText(state.lastPin);
-          document.getElementById("btnRecheck").onclick = async ()=>{ await loadMe(); render(); };
-        }
-
-        const pinInput = document.getElementById("pinInput");
-        pinInput.addEventListener("input", ()=>{ pinInput.value = pinInput.value.replace(/\D/g,"").slice(0,6); });
-        document.getElementById("btnJoinPin").onclick = ()=>{
-          const pin = pinInput.value.trim();
-          if(!/^\d{6}$/.test(pin)){ toast("Введите 6 цифр"); return; }
-          joinPair(pin);
-        };
-
-        document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
-
-        return;
-      }
-
-      document.getElementById("tabs").classList.remove("hidden");
-
-      if(state.screen === "schedule"){
-        setActiveTab("schedule");
-
-        const dayNotes = (state.dayData?.dayNotes || []).slice().reverse();
-
-        root.innerHTML = `
-          <div class="card">
-            <h2>Schedule</h2>
-            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.date))}</span><span class="dow">${escapeHtml(fmtDow(state.date))}</span></div>
-
-            <div class="dateRow" style="margin-top:10px;">
-              <button class="btn-ghost" id="btnPrev">←</button>
-              <button class="btn-ghost" id="btnToday">Сегодня</button>
-              <button class="btn-ghost" id="btnNext">→</button>
-            </div>
-
-            <div class="dateRow" style="margin-top:8px;">
-              <button class="btn-ghost" id="btnTomorrow">Завтра</button>
-              <input id="datePick" type="date" value="${escapeHtml(state.date)}" />
-              <button class="btn-ghost" id="btnRefreshDay">Обновить</button>
-            </div>
-          </div>
-
-          <div class="board">
-            <div id="colMe"></div>
-            <div id="colOther"></div>
-          </div>
-
-          <div class="card notesBox">
-            <h2>Notes (by date)</h2>
-            <div class="muted" style="margin-bottom:10px;">Заметки привязаны только к дате (без времени).</div>
-            ${dayNotes.length ? dayNotes.map(n=>`
-              <div class="noteItem">
-                <div class="noteMeta">
-                  <span class="mono">${escapeHtml(n.createdAt.slice(11,16))}</span>
-                  <span class="mono">${escapeHtml(String(n.authorTgUserId)===String(myId())?"you":"partner")}</span>
-                </div>
-                <div>${escapeHtml(n.text)}</div>
-              </div>
-            `).join("") : `<div class="muted">Пока нет заметок на эту дату.</div>`}
-          </div>
-
-          ${errLine}
-        `;
-
-        document.getElementById("btnPrev").onclick = ()=>safeDateNav(-1);
-        document.getElementById("btnNext").onclick = ()=>safeDateNav(+1);
-        document.getElementById("btnToday").onclick = ()=>safeSetDate(todayISO());
-        document.getElementById("btnTomorrow").onclick = ()=>safeSetDate(addDays(todayISO(), +1));
-        document.getElementById("btnRefreshDay").onclick = ()=>safeReloadDay();
-        document.getElementById("datePick").onchange = (e)=>safeSetDate(e.target.value);
-
-        renderColumn("colMe", myId(), "You");
-        renderColumn("colOther", otherId(), "Partner");
-        return;
-      }
-
-      if(state.screen === "create"){
-        setActiveTab("create");
-
-        root.innerHTML = `
-          <div class="card">
-            <h2>Create</h2>
-            <div class="muted">Выбери, что создавать: событие или заметку на дату.</div>
-          </div>
-
-          <div class="card">
-            <div class="seg">
-              <button id="segEvent" class="${state.createMode==="event" ? "active" : ""}">Event</button>
-              <button id="segNote" class="${state.createMode==="note" ? "active" : ""}">Note</button>
-            </div>
-
-            <div id="createEvent" class="${state.createMode==="event" ? "" : "hidden"}">
-              <div class="row" style="margin-bottom:10px;">
-                <input id="fTitle" placeholder="Название (например: Работа)" />
-                <select id="fTimeKind">
-                  <option value="exact">Exact</option>
-                  <option value="approx">Approx</option>
-                  <option value="anytime">Anytime</option>
-                </select>
-              </div>
-
-              <div class="row" style="margin-bottom:10px;">
-                <input id="fStart" placeholder="Начало (HH:MM)" />
-                <input id="fEnd" placeholder="Конец (HH:MM)" />
-              </div>
-
-              <div class="divider"></div>
-
-              <div class="row" style="margin-bottom:10px;">
-                <select id="fRecurrence">
-                  <option value="none">Single date</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="cycle">Раз в X дней</option>
-                </select>
-                <input id="fSingleDate" placeholder="Дата (YYYY-MM-DD)" />
-              </div>
-
-              <div id="weeklyBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
-                <div class="muted" style="margin-bottom:8px;">Дни недели:</div>
-                <div class="row">
-                  <button class="btn-ghost" data-d="0">Пн</button>
-                  <button class="btn-ghost" data-d="1">Вт</button>
-                  <button class="btn-ghost" data-d="2">Ср</button>
-                  <button class="btn-ghost" data-d="3">Чт</button>
-                  <button class="btn-ghost" data-d="4">Пт</button>
-                  <button class="btn-ghost" data-d="5">Сб</button>
-                  <button class="btn-ghost" data-d="6">Вс</button>
-                </div>
-              </div>
-
-              <div id="cycleBox" class="card hidden" style="margin:0 0 10px 0; box-shadow:none; background:rgba(255,255,255,.02);">
-                <div class="muted" style="margin-bottom:8px;">Повторять раз в X дней:</div>
-                <div class="row" style="margin-bottom:10px;">
-                  <input id="fEveryXDays" placeholder="Например: 4" />
-                  <input id="fCycleAnchor" placeholder="Anchor date (YYYY-MM-DD)" />
-                </div>
-                <div class="muted">Если X=4, событие будет каждые 4 дня от даты старта.</div>
-              </div>
-
-              <div class="muted" style="margin:10px 0 8px 0;">Цвет:</div>
-              <div class="colors" id="colorRow"></div>
-
-              <div class="divider"></div>
-              <button class="btn-pink" id="btnSaveEvent">Сохранить событие</button>
-            </div>
-
-            <div id="createNote" class="${state.createMode==="note" ? "" : "hidden"}">
-              <div class="muted" style="margin-bottom:8px;">Заметка по дате (без времени):</div>
-              <div class="row" style="margin-bottom:10px;">
-                <input id="nDate" type="date" value="${escapeHtml(state.noteForm.date)}" />
-              </div>
-              <textarea id="nText" placeholder="Например: сегодня тренировка отменяется / важная встреча / дедлайн"></textarea>
-              <div class="divider"></div>
-              <button class="btn-pink" id="btnSaveNote">Сохранить заметку</button>
-            </div>
-          </div>
-
-          ${errLine}
-        `;
-
-        document.getElementById("segEvent").onclick = ()=>{ state.createMode="event"; render(); };
-        document.getElementById("segNote").onclick = ()=>{ state.createMode="note"; render(); };
-
-        if(state.createMode === "event"){
-          bindCreateInputs();
-          document.getElementById("btnSaveEvent").onclick = saveEvent;
-        } else {
-          const nDate = document.getElementById("nDate");
-          const nText = document.getElementById("nText");
-          nText.value = state.noteForm.text;
-          nDate.onchange = (e)=> state.noteForm.date = e.target.value;
-          nText.oninput = (e)=> state.noteForm.text = e.target.value;
-          document.getElementById("btnSaveNote").onclick = saveDayNote;
-        }
-        return;
-      }
-
-      if(state.screen === "nutrition"){
-        setActiveTab("nutrition");
-
-        const foods = state.nutrition.foods || [];
-        const entryForm = state.nutrition.entryForm;
-        const goals = state.nutrition.goals;
-        const foodOptions = foods.map(f=>`<option value="${escapeHtml(String(f.id))}">${escapeHtml(f.name)}</option>`).join("");
-
-        const metrics = [
-          { key:"kcal", label:"Калории", color:"#ff2d86", unit:"kcal" },
-          { key:"protein", label:"Белки", color:"#38bdf8", unit:"г" },
-          { key:"fat", label:"Жиры", color:"#f97316", unit:"г" },
-          { key:"carbs", label:"Углеводы", color:"#22c55e", unit:"г" }
-        ];
-        const progressHtml = metrics.map(m=>`
-          <div class="meter">
-            <div class="meterTop"><b>${escapeHtml(m.label)}</b><span>${escapeHtml(fmtNum(state.nutrition.totals[m.key]))} / ${escapeHtml(fmtNum(goals[m.key] || 0))} ${escapeHtml(m.unit)}</span></div>
-            <div class="meterBar"><span style="width:${calcPercent(state.nutrition.totals[m.key], goals[m.key])}%; background:${m.color};"></span></div>
-          </div>
-        `).join("");
-
-        const entriesHtml = (state.nutrition.entries || []).map(e=>`
-          <div class="logItem">
-            <div style="min-width:0;">
-              <div><b>${escapeHtml(e.name)}</b></div>
-              <div class="muted">${escapeHtml(fmtNum(e.kcal))} kcal • Б ${escapeHtml(fmtNum(e.protein))} / Ж ${escapeHtml(fmtNum(e.fat))} / У ${escapeHtml(fmtNum(e.carbs))}</div>
-              <div class="muted small">${escapeHtml(String(e.grams))} г</div>
-            </div>
-            <div class="iconBtns">
-              <button class="btn-ghost miniBtn" data-edit-entry="${escapeHtml(String(e.id))}">✎</button>
-              <button class="btn-danger miniBtn" data-del-entry="${escapeHtml(String(e.id))}">✕</button>
-            </div>
-          </div>
-          <div class="hidden" id="edit-entry-box-${escapeHtml(String(e.id))}" style="margin-bottom:10px;">
-            <div class="row">
-              <input id="entryGrams-${escapeHtml(String(e.id))}" placeholder="Новые граммы" value="${escapeHtml(String(e.grams))}" />
-              <button class="btn-ghost" data-update-entry="${escapeHtml(String(e.id))}">Сохранить</button>
-            </div>
-          </div>
-        `).join("") || `<div class="muted">Пока нет записей за этот день.</div>`;
-
-        root.innerHTML = `
-          <div class="card">
-            <h2>Nutrition</h2>
-            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.nutrition.date))}</span><span class="dow">${escapeHtml(fmtDow(state.nutrition.date))}</span></div>
-            <div class="dateRow"><input id="nutritionDate" type="date" value="${escapeHtml(state.nutrition.date)}" /></div>
-            <div class="divider"></div>
-            <div class="nutriProgress">${progressHtml}</div>
-          </div>
-
-          <div class="card">
-            <h2>Вес и вода</h2>
-            <div class="summaryGrid">
-              <div>
-                <div class="muted">Вес (кг)</div>
-                <div class="row" style="margin-top:6px;">
-                  <input id="weightInput" placeholder="Например 69.5" value="${escapeHtml(String(state.nutrition.stats.weightKg ?? ""))}" ${state.nutrition.weightLocked ? "disabled" : ""} />
-                  <div class="inlineActions">
-                    <button class="btn-ghost" id="btnToggleWeightEdit">${state.nutrition.weightLocked ? "Ред." : "Блок"}</button>
-                    <button class="btn-pink" id="btnSaveWeight">Сохранить</button>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <div class="muted">Вода (мл)</div>
-                <div class="row" style="margin-top:6px;">
-                  <input id="waterInput" placeholder="Например 2000" value="${escapeHtml(String(state.nutrition.stats.waterMl ?? ""))}" ${state.nutrition.waterLocked ? "disabled" : ""} />
-                  <div class="inlineActions">
-                    <button class="btn-ghost" id="btnToggleWaterEdit">${state.nutrition.waterLocked ? "Ред." : "Блок"}</button>
-                    <button class="btn-pink" id="btnSaveWater">Сохранить</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="row">
-              <h2 style="margin:0;">Добавление пищи</h2>
-              <button class="btn-pink" id="btnToggleAddEntry">${state.nutrition.showAddForm ? "Скрыть" : "Добавить"}</button>
-            </div>
-            <div id="addEntryPanel" class="${state.nutrition.showAddForm ? "" : "hidden"}" style="margin-top:10px;">
-              <select id="entryFoodSelect" style="margin-bottom:10px;">
-                <option value="custom">Новая пища</option>
-                ${foodOptions}
-              </select>
-              <div id="customEntryBox" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
-                <input id="entryName" placeholder="Название новой пищи" value="${escapeHtml(entryForm.name)}" style="margin-bottom:10px;" />
-              </div>
-              <input id="entryGrams" placeholder="Граммовка" value="${escapeHtml(entryForm.grams)}" style="margin-bottom:10px;" />
-              <div id="customNutritionMacros" class="${entryForm.foodId === "custom" ? "" : "hidden"}">
-                <div class="row" style="margin-bottom:10px;">
-                  <input id="entryKcal" placeholder="Ккал/100г" value="${escapeHtml(entryForm.kcal)}" />
-                  <input id="entryProtein" placeholder="Б/100г" value="${escapeHtml(entryForm.protein)}" />
-                </div>
-                <div class="row" style="margin-bottom:10px;">
-                  <input id="entryFat" placeholder="Ж/100г" value="${escapeHtml(entryForm.fat)}" />
-                  <input id="entryCarbs" placeholder="У/100г" value="${escapeHtml(entryForm.carbs)}" />
-                </div>
-              </div>
-              <button class="btn-pink" id="btnAddEntry">Добавить</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>Дневной лог</h2>
-            ${entriesHtml}
-          </div>
-
-          ${errLine}
-        `;
-
-        document.getElementById("nutritionDate").onchange = async (e)=>{
-          state.nutrition.date = e.target.value;
-          await loadNutritionDay();
-          await loadStatsDay();
-          render();
-        };
-        document.getElementById("btnToggleWeightEdit").onclick = ()=>{ state.nutrition.weightLocked = !state.nutrition.weightLocked; render(); };
-        document.getElementById("btnToggleWaterEdit").onclick = ()=>{ state.nutrition.waterLocked = !state.nutrition.waterLocked; render(); };
-        document.getElementById("btnSaveWeight").onclick = async ()=>{ try { await saveWeight(); } catch(e){ toast(e.message); } };
-        document.getElementById("btnSaveWater").onclick = async ()=>{ try { await saveWater(); } catch(e){ toast(e.message); } };
-
-        const selectFood = document.getElementById("entryFoodSelect");
-        selectFood.value = entryForm.foodId;
-        selectFood.onchange = (e)=>{ entryForm.foodId = e.target.value; render(); };
-        document.getElementById("btnToggleAddEntry").onclick = ()=>{ state.nutrition.showAddForm = !state.nutrition.showAddForm; render(); };
-        document.getElementById("entryGrams").oninput = (e)=> entryForm.grams = e.target.value;
-        if(entryForm.foodId === "custom"){
-          document.getElementById("entryName").oninput = (e)=> entryForm.name = e.target.value;
-          document.getElementById("entryKcal").oninput = (e)=> entryForm.kcal = e.target.value;
-          document.getElementById("entryProtein").oninput = (e)=> entryForm.protein = e.target.value;
-          document.getElementById("entryFat").oninput = (e)=> entryForm.fat = e.target.value;
-          document.getElementById("entryCarbs").oninput = (e)=> entryForm.carbs = e.target.value;
-        }
-        document.getElementById("btnAddEntry").onclick = async ()=>{ try { await addNutritionEntry(); } catch(e){ toast(e.message); } };
-
-        document.querySelectorAll("[data-del-entry]").forEach(btn=>{ btn.onclick = async ()=>{ try { await deleteEntry(btn.getAttribute("data-del-entry")); } catch(e){ toast(e.message); } }; });
-        document.querySelectorAll("[data-edit-entry]").forEach(btn=>{ btn.onclick = ()=>{ const id = btn.getAttribute("data-edit-entry"); document.getElementById(`edit-entry-box-${id}`).classList.toggle("hidden"); }; });
-        document.querySelectorAll("[data-update-entry]").forEach(btn=>{ btn.onclick = async ()=>{ const entryId = btn.getAttribute("data-update-entry"); const input = document.getElementById(`entryGrams-${entryId}`); try { await updateEntryGrams(entryId, input.value); } catch(e){ toast(e.message); } }; });
-
-        return;
-      }
-
-      if(state.screen === "training"){
-        setActiveTab("training");
-
-        const exOptions = (state.training.exercises || []).map(ex=>
-          `<option value="${escapeHtml(String(ex.id))}">${escapeHtml(ex.name)}${ex.category ? " · "+escapeHtml(ex.category) : ""}</option>`
-        ).join("");
-
-        const itemsHtml = (state.training.dayItems || []).map(item=>{
-          const setsCount = item.sets.length;
-          const first = item.sets[0];
-          const summary = first ? `${escapeHtml(String(first.weight))} кг × ${escapeHtml(String(first.reps))}` : "—";
-          const history = state.training.history[item.exerciseId] || [];
-          const historyHtml = history.length ? history.map(h=>`<div class="muted">${escapeHtml(h.date)} • ${escapeHtml(String(h.weight))}кг × ${escapeHtml(String(h.reps))}</div>`).join("") : "";
-          return `
-            <div class="logItem">
-              <div style="min-width:0;">
-                <div><b>${escapeHtml(item.name)}</b></div>
-                ${item.category ? `<div class="muted">${escapeHtml(item.category)}</div>` : ""}
-                <div class="muted">Подходов: ${escapeHtml(String(setsCount))} • ${summary}</div>
-                ${historyHtml ? `<div style="margin-top:8px;">${historyHtml}</div>` : ""}
-              </div>
-              <button class="btn-ghost miniBtn" data-history="${escapeHtml(String(item.exerciseId))}">↺</button>
-            </div>
-          `;
-        }).join("") || `<div class="muted">Пока нет тренировок за этот день.</div>`;
-
-        root.innerHTML = `
-          <div class="card">
-            <h2>Training</h2>
-            <div class="headerDate"><span>${escapeHtml(fmtRuDate(state.training.date))}</span><span class="dow">${escapeHtml(fmtDow(state.training.date))}</span></div>
-            <div class="dateRow"><input id="trainingDate" type="date" value="${escapeHtml(state.training.date)}" /></div>
-          </div>
-
-          <div class="card">
-            <div class="row">
-              <h2 style="margin:0;">Добавить сет</h2>
-              <button class="btn-pink" id="btnToggleTrainingAdd">${state.training.showAddForm ? "Скрыть" : "Добавить"}</button>
-            </div>
-            <div id="trainingAddPanel" class="${state.training.showAddForm ? "" : "hidden"}" style="margin-top:10px;">
-              <select id="setExercise" style="margin-bottom:10px;">
-                <option value="">Новое упражнение</option>
-                ${exOptions}
-              </select>
-              <div id="newExerciseBox" class="${state.training.setForm.exerciseId ? "hidden" : ""}">
-                <input id="setExerciseName" placeholder="Название упражнения" value="${escapeHtml(state.training.setForm.exerciseName)}" style="margin-bottom:10px;" />
-                <input id="setExerciseCategory" placeholder="Категория" value="${escapeHtml(state.training.setForm.category)}" style="margin-bottom:10px;" />
-              </div>
-              <div class="row" style="margin-bottom:10px;">
-                <input id="setWeight" placeholder="Вес (кг)" value="${escapeHtml(state.training.setForm.weight)}" />
-                <input id="setReps" placeholder="Повторы" value="${escapeHtml(state.training.setForm.reps)}" />
-                <input id="setCount" placeholder="Подходы" value="${escapeHtml(state.training.setForm.setsCount || "1")}" />
-              </div>
-              <button class="btn-pink" id="btnAddSet">Добавить</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>Лог дня</h2>
-            ${itemsHtml}
-          </div>
-
-          ${errLine}
-        `;
-
-        document.getElementById("trainingDate").onchange = async (e)=>{ state.training.date = e.target.value; await loadTrainingDay(); render(); };
-        document.getElementById("btnToggleTrainingAdd").onclick = ()=>{ state.training.showAddForm = !state.training.showAddForm; render(); };
-        const setExercise = document.getElementById("setExercise");
-        setExercise.value = state.training.setForm.exerciseId;
-        setExercise.onchange = (e)=>{ state.training.setForm.exerciseId = e.target.value; render(); };
-        if(!state.training.setForm.exerciseId){
-          document.getElementById("setExerciseName").oninput = (e)=> state.training.setForm.exerciseName = e.target.value;
-          document.getElementById("setExerciseCategory").oninput = (e)=> state.training.setForm.category = e.target.value;
-        }
-        document.getElementById("setWeight").oninput = (e)=> state.training.setForm.weight = e.target.value;
-        document.getElementById("setReps").oninput = (e)=> state.training.setForm.reps = e.target.value;
-        document.getElementById("setCount").oninput = (e)=> state.training.setForm.setsCount = e.target.value;
-        document.getElementById("btnAddSet").onclick = async ()=>{ try { await addWorkoutSet(); } catch(e){ toast(e.message); } };
-        document.querySelectorAll("[data-history]").forEach(btn=>{ btn.onclick = async ()=>{ try { await loadExerciseHistory(btn.getAttribute("data-history")); } catch(e){ toast(e.message); } }; });
-
-        return;
-      }
-
-      if(state.screen === "profile"){
-        setActiveTab("profile");
-
-        root.innerHTML = `
-          <div class="card">
-            <h2>Profile</h2>
-            <div class="muted">You / Partner</div>
-            <div class="divider"></div>
-            <div class="pill">you</div>
-            <div style="height:8px;"></div>
-            <div class="pill">partner</div>
-            <div style="height:8px;"></div>
-            <div class="pill">spaceId: <span class="mono">${escapeHtml(String(state.me.spaceId))}</span></div>
-            <div style="height:8px;"></div>
-            <div class="pill">members: <span class="mono">${escapeHtml(String(state.me.membersCount))}</span></div>
-
-            <div class="divider"></div>
-            <h2>Нормы КБЖУ</h2>
-            <div class="summaryGrid" style="margin-bottom:10px;">
-              <input id="goalKcal" placeholder="Ккал" value="${escapeHtml(String(state.nutrition.goals.kcal || ""))}" />
-              <input id="goalProtein" placeholder="Белки" value="${escapeHtml(String(state.nutrition.goals.protein || ""))}" />
-              <input id="goalFat" placeholder="Жиры" value="${escapeHtml(String(state.nutrition.goals.fat || ""))}" />
-              <input id="goalCarbs" placeholder="Углеводы" value="${escapeHtml(String(state.nutrition.goals.carbs || ""))}" />
-            </div>
-            <button class="btn-ghost" id="btnSaveGoals">Сохранить нормы</button>
-
-            <div class="divider"></div>
-            <!-- ✅ FIX already_paired -->
-            <button class="btn-danger" id="btnLeaveSpace">Сбросить связь</button>
-            <div style="height:10px;"></div>
-            <button class="btn-danger" id="btnResetSpace">OWNER: Reset space</button>
-
-            <div class="divider"></div>
-            <div class="row" style="margin-bottom:10px;">
-              <div class="pill">Compact</div>
-              <button class="btn-ghost" id="btnToggleCompact">${state.compact ? "Выключить" : "Включить"}</button>
-            </div>
-            <button class="btn-ghost" id="btnProfileRefresh">Обновить</button>
-          </div>
-          ${errLine}
-        `;
-
-        document.getElementById("btnProfileRefresh").onclick = async ()=>{
-          await loadMe();
-          await loadDay(true);
-          render();
-        };
-
-        document.getElementById("btnLeaveSpace").onclick = leaveSpaceFrontend;
-        document.getElementById("btnResetSpace").onclick = resetSpaceFrontend;
-        document.getElementById("btnToggleCompact").onclick = ()=>{
-          state.compact = !state.compact;
-          applyCompactMode();
-          render();
-        };
-        document.getElementById("btnSaveGoals").onclick = ()=>{
-          state.nutrition.goals.kcal = Number(document.getElementById("goalKcal").value || 0);
-          state.nutrition.goals.protein = Number(document.getElementById("goalProtein").value || 0);
-          state.nutrition.goals.fat = Number(document.getElementById("goalFat").value || 0);
-          state.nutrition.goals.carbs = Number(document.getElementById("goalCarbs").value || 0);
-          saveNutritionGoals();
-          toast("Нормы сохранены");
-        };
-
-        return;
-      }
-    }
-
-    async function safeDateNav(delta){
-      if(state.actionLock) return;
-      state.actionLock = true;
-      try{
-        state.date = addDays(state.date, delta);
-        state.since = null;
-        await loadDay(true);
-      } finally {
-        state.actionLock = false;
-      }
-    }
-    async function safeSetDate(date){
-      if(state.actionLock) return;
-      if(!date) return;
-      state.actionLock = true;
-      try{
-        state.date = date;
-        state.since = null;
-        await loadDay(true);
-      } finally {
-        state.actionLock = false;
-      }
-    }
-    async function safeReloadDay(){
-      if(state.actionLock) return;
-      state.actionLock = true;
-      try{
-        state.since = null;
-        await loadDay(true);
-      } finally {
-        state.actionLock = false;
-      }
-    }
-
-    function wireGlobal(){
-      document.getElementById("tabSchedule").onclick = async ()=>{
-        state.screen = "schedule";
-        render();
-        await loadDay(true);
-      };
-      document.getElementById("tabCreate").onclick = ()=>{
-        state.screen = "create";
-        render();
-      };
-      document.getElementById("tabNutrition").onclick = async ()=>{
-        state.screen = "nutrition";
-        try {
-          await ensureNutritionData();
-        } catch(e){
-          toast(e.message || "nutrition_failed");
-        }
-        render();
-      };
-      document.getElementById("tabTraining").onclick = async ()=>{
-        state.screen = "training";
-        try {
-          await ensureTrainingData();
-        } catch(e){
-          toast(e.message || "training_failed");
-        }
-        render();
-      };
-      document.getElementById("tabProfile").onclick = ()=>{
-        state.screen = "profile";
-        render();
-      };
-
-      document.getElementById("eventClose").onclick = closeEventModal;
-      document.getElementById("btnAddEventNote").onclick = ()=>{
-        document.getElementById("addEventNoteBox").classList.toggle("hidden");
-      };
-      document.getElementById("btnEditSeries").onclick = ()=>{
-        document.getElementById("editEventBox").classList.toggle("hidden");
-      };
-      document.getElementById("editTimeKind").onchange = (e)=>{
-        const off = e.target.value === "anytime";
-        document.getElementById("editStart").disabled = off;
-        document.getElementById("editEnd").disabled = off;
-      };
-      document.getElementById("btnSaveSeriesEdit").onclick = saveSeriesEdit;
-      document.getElementById("btnSendEventNote").onclick = sendEventNote;
-      document.getElementById("btnDeleteSeries").onclick = deleteSeries;
-
-      document.body.addEventListener("touchstart", (e)=>{
-        const t = e.target;
-        if(!(t instanceof HTMLElement)) return;
-        if(t.closest("input,textarea,select")) return;
-        if(document.activeElement && typeof document.activeElement.blur === "function"){
-          document.activeElement.blur();
-        }
-      }, { passive:true });
-      document.body.addEventListener("click", (e)=>{
-        const t = e.target;
-        if(!(t instanceof HTMLElement)) return;
-        if(t.closest("input,textarea,select")) return;
-        if(document.activeElement && typeof document.activeElement.blur === "function"){
-          document.activeElement.blur();
-        }
-      });
-    }
-
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    async function init(){
-      state.error = null;
-      applyCompactMode();
-      wireGlobal();
-      await loadMe();
-      if(realPaired()){
-        await loadDay(true);
-        startPolling();
-      }
-      render();
-    }
-
-    init();
-  </script>
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg?.ready) tg.ready();
+const today = new Date().toISOString().slice(0,10);
+
+const state = { nutritionDate: today, trainingDate: today, foods: [] };
+
+function msg(text){
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.classList.remove('hidden');
+  setTimeout(()=>el.classList.add('hidden'), 2600);
+}
+
+async function api(path, options={}){
+  const headers = { 'Content-Type':'application/json', ...(options.headers||{}) };
+  const initData = tg?.initData || '';
+  if (initData) headers['x-telegram-init-data'] = initData;
+  const res = await fetch(path,{...options,headers});
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error || 'request_failed');
+  return data;
+}
+
+function num(v){ return Number(String(v||'').replace(',','.')); }
+
+async function loadFoods(){
+  const data = await api('/api/nutrition/foods');
+  state.foods = data.foods || [];
+  const sel = document.getElementById('foodSelect');
+  sel.innerHTML = '<option value="">Выбрать из продуктов</option>' +
+    state.foods.map(f=>`<option value="${f.id}">${f.name}</option>`).join('');
+}
+
+async function loadNutrition(){
+  const [day,stats] = await Promise.all([
+    api(`/api/nutrition/day?date=${state.nutritionDate}`),
+    api(`/api/stats/day?date=${state.nutritionDate}`)
+  ]);
+  const t = day.totals || {kcal:0,protein:0,fat:0,carbs:0};
+  document.getElementById('totals').textContent = `ккал: ${t.kcal.toFixed(1)} · белки: ${t.protein.toFixed(1)} · жиры: ${t.fat.toFixed(1)} · углеводы: ${t.carbs.toFixed(1)}`;
+  document.getElementById('weight').value = stats.weightKg ?? '';
+  document.getElementById('water').value = stats.waterMl ?? '';
+  const list = document.getElementById('entries');
+  list.innerHTML = (day.entries||[]).map(e=>`<div class="item"><div class="itemTop"><b>${e.name}</b><button class="btn danger" onclick="deleteEntry(${e.id})">Удалить</button></div><div class="small">${e.grams}г · ${e.kcal.toFixed(1)} ккал · Б ${e.protein.toFixed(1)} / Ж ${e.fat.toFixed(1)} / У ${e.carbs.toFixed(1)}</div></div>`).join('') || '<div class="small muted">Записей нет</div>';
+}
+
+async function deleteEntry(id){
+  await api(`/api/nutrition/entry/${id}`,{method:'DELETE'});
+  await loadNutrition();
+}
+window.deleteEntry = deleteEntry;
+
+async function loadExercises(){
+  const data = await api('/api/training/exercises');
+  const sel = document.getElementById('exerciseSelect');
+  sel.innerHTML = '<option value="">Новое упражнение</option>' + (data.exercises||[]).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+async function loadTraining(){
+  const day = await api(`/api/training/day?date=${state.trainingDate}`);
+  const list = document.getElementById('workouts');
+  list.innerHTML = (day.items||[]).map(i=>`<div class="item"><b>${i.name}</b><div class="small muted">${(i.sets||[]).map(s=>`${s.weight}кг × ${s.reps}`).join(' · ')}</div></div>`).join('') || '<div class="small muted">Тренировок нет</div>';
+}
+
+async function addEntry(){
+  const foodId = document.getElementById('foodSelect').value;
+  const payload = { date: state.nutritionDate, grams: num(document.getElementById('grams').value) };
+  if(foodId){ payload.foodId = Number(foodId); }
+  else {
+    Object.assign(payload,{ name: document.getElementById('entryName').value.trim(), kcal: num(document.getElementById('kcal').value), protein: num(document.getElementById('protein').value), fat: num(document.getElementById('fat').value), carbs: num(document.getElementById('carbs').value) });
+  }
+  await api('/api/nutrition/entry',{method:'POST', body: JSON.stringify(payload)});
+  msg('Запись добавлена');
+  await loadNutrition();
+}
+
+async function addSet(){
+  let exId = Number(document.getElementById('exerciseSelect').value || 0);
+  if(!exId){
+    const exercise = await api('/api/training/exercise',{method:'POST', body: JSON.stringify({name: document.getElementById('exerciseName').value.trim(), category: document.getElementById('exerciseCategory').value.trim()})});
+    exId = exercise.id;
+    await loadExercises();
+  }
+  await api('/api/training/workout',{method:'POST', body: JSON.stringify({date: state.trainingDate, exerciseId: exId, weight: num(document.getElementById('setWeight').value), reps: num(document.getElementById('setReps').value), setsCount: Number(document.getElementById('setsCount').value || 1)})});
+  msg('Тренировка сохранена');
+  await loadTraining();
+}
+
+async function saveWeight(){
+  await api('/api/stats/weight',{method:'PUT', body: JSON.stringify({date: state.nutritionDate, kg: num(document.getElementById('weight').value)})});
+  msg('Вес сохранен');
+}
+
+async function saveWater(){
+  await api('/api/stats/water',{method:'PUT', body: JSON.stringify({date: state.nutritionDate, ml: num(document.getElementById('water').value)})});
+  msg('Вода сохранена');
+}
+
+function switchTab(tab){
+  const isNut = tab === 'nutrition';
+  document.getElementById('screenNutrition').classList.toggle('hidden', !isNut);
+  document.getElementById('screenTraining').classList.toggle('hidden', isNut);
+  document.getElementById('tabNutrition').classList.toggle('active', isNut);
+  document.getElementById('tabTraining').classList.toggle('active', !isNut);
+}
+
+document.getElementById('tabNutrition').onclick = ()=>switchTab('nutrition');
+document.getElementById('tabTraining').onclick = ()=>switchTab('training');
+document.getElementById('nutDate').value = today;
+document.getElementById('trainDate').value = today;
+document.getElementById('nutDate').onchange = async (e)=>{state.nutritionDate=e.target.value; await loadNutrition();};
+document.getElementById('trainDate').onchange = async (e)=>{state.trainingDate=e.target.value; await loadTraining();};
+document.getElementById('addEntry').onclick = ()=>addEntry().catch(e=>msg(e.message));
+document.getElementById('addSet').onclick = ()=>addSet().catch(e=>msg(e.message));
+document.getElementById('saveWeight').onclick = ()=>saveWeight().catch(e=>msg(e.message));
+document.getElementById('saveWater').onclick = ()=>saveWater().catch(e=>msg(e.message));
+
+(async function init(){
+  try{
+    if(!tg?.initData) msg('Откройте приложение в Telegram для записи данных.');
+    await Promise.all([loadFoods(), loadNutrition(), loadExercises(), loadTraining()]);
+  }catch(e){
+    msg(e.message || 'Ошибка загрузки');
+  }
+})();
+</script>
 </body>
 </html>
